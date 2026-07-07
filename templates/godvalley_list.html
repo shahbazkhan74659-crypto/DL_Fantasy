@@ -1,28 +1,61 @@
 {% extends 'base.html' %}
+{% block title %}
+The God Valley | DL Fantasy
+{% endblock %}
+
 {% block content %}
 
 <section class="hero">
     <div class="hero-content parallax">
-        <h1>
-            The God Valley
-        </h1>
+        <h1>The God Valley</h1>
+        <p>
+            A story of a group of gangsters, The Monsters, and their
+            boss Mitsuba A. Takeshi, who wants to become The Greatest
+            Gangster of the World, in a world full of Criminals, Power
+            systems, Government, Corruption, and Religion. The story
+            follows great adventures that help our heroes to become
+            what they started for.
+        </p>
+        <div class="hero-buttons">
+            <a href="{% url 'godvalley_chapters' %}" class="btn">Read Chapters</a>
+            <a href="{% url 'concepts' %}" class="btn-outline">Explore Lore</a>
+        </div>
     </div>
 </section>
 
-<section class="archive">
-    <form class="search-box" method="get" action="{% url 'godvalley_list' %}">
-        <input type="text" name="q" placeholder="Search chapters by title…" value="{{ query }}">
-    </form>
+<section class="archive godvalley-overview">
+    <div class="archive-card static-reveal">
+        <h2>The Story</h2>
+        <p class="story-text">
+            In a fractured world shaped by collapsing
+            civilizations, distorted morality,
+            forgotten gods, and weaponized suffering,
+            humanity survives beneath systems
+            it no longer understands.
+            <br><br>
+            The God Valley follows individuals
+            trapped between power,
+            memory, ideology,
+            and the terrifying realization
+            that civilization itself may be built
+            upon inherited delusions.
+            <br><br>
+            Every empire claims righteousness.
+            Every god demands sacrifice.
+            Every revolution eventually becomes
+            the thing it once hated.
+        </p>
+    </div>
+</section>
 
-    <div class="archive-grid">
-        {% for chapter in chapters %}
-        <a class="archive-card concept-card show" href="{% url 'godvalley_detail' chapter.slug %}">
-            <h3>Ch. {{ chapter.chapter_number }} — {{ chapter.title }}</h3>
-            <p>{{ chapter.excerpt }}</p>
-        </a>
-        {% empty %}
-        <p>No chapters match your search.</p>
-        {% endfor %}
+<section class="archive godvalley-quote">
+    <div class="archive-card static-reveal quote-card">
+        <h3>Fragment 01</h3>
+        <p class="quote-text">
+            “The cruelest civilizations are not built by Rulers.
+            They are built by ordinary people convinced
+            that their suffering justifies their righteousness.”
+        </p>
     </div>
 </section>
 

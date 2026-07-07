@@ -1,12 +1,32 @@
 {% extends 'base.html' %}
+{% block title %}About | DL Fantasy{% endblock %}
+
 {% block content %}
+<div class="about-container">
 
-<section class="hero">
-    <div class="hero-content parallax">
-        <h1>
-            About
-        </h1>
-    </div>
-</section>
+    <section class="about-section system-profile">
+        <span class="section-tag">01 / THE ARCHITECTURE</span>
+        <h1>DL Fantasy</h1>
+        <p class="manifesto">
+            DL — short for <strong>Dex Library</strong> — is a personal archive of fiction,
+            philosophy, and mythology, built to hold everything written across the years and
+            centered on the ongoing story of <em>The God Valley</em>. It is not a blog and not a
+            social platform: no comments, no likes, no accounts. Just a quiet notebook that's
+            been made public.
+        </p>
+    </section>
 
+    <hr class="about-divider">
+
+    <section class="about-section creator-profile">
+        <span class="section-tag">02 / THE ADMINISTRATOR</span>
+        <h2>Mr. Dex</h2>
+        <p class="bio">
+            Writer and sole author behind DL Fantasy. Everything here — every chapter, essay,
+            and page — is written and maintained by one person, through Django's admin, with no
+            editorial calendar and no audience metrics deciding what gets written next.
+        </p>
+    </section>
+
+</div>
 {% endblock %}

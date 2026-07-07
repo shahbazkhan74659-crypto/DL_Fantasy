@@ -42,6 +42,10 @@ def writings_detail(request, category, slug):
 
 
 def godvalley_list(request):
+    return render(request, 'godvalley_list.html')
+
+
+def godvalley_chapters(request):
     chapters = Content.objects.filter(
         category=Content.Category.GODVALLEY, is_published=True,
     ).order_by('chapter_number')
@@ -50,7 +54,7 @@ def godvalley_list(request):
     if query:
         chapters = chapters.filter(title__icontains=query)
 
-    return render(request, 'godvalley_list.html', {'chapters': chapters, 'query': query})
+    return render(request, 'godvalley_chapters.html', {'chapters': chapters, 'query': query})
 
 
 def godvalley_detail(request, slug):
@@ -69,6 +73,18 @@ def godvalley_detail(request, slug):
         'prev_chapter': prev_chapter,
         'next_chapter': next_chapter,
     })
+
+
+def archive(request):
+    return render(request, 'archive.html')
+
+
+def concepts(request):
+    return render(request, 'concepts.html')
+
+
+def collections(request):
+    return render(request, 'collections.html')
 
 
 def about(request):

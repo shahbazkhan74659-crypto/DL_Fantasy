@@ -519,6 +519,176 @@ footer small{
     margin-bottom:24px;
 }
 
+/* GOD VALLEY EXCLUSIVES */
+
+.godvalley-overview{
+    padding-bottom:40px;
+}
+
+.godvalley-quote{
+    padding-top:0;
+}
+
+.static-reveal{
+    opacity:1;
+    transform:translateY(0);
+}
+
+.godvalley-overview h2{
+    color:#d4af37;
+    font-family:'Cormorant Garamond', serif;
+    font-size:2.5rem;
+    margin-bottom:20px;
+}
+
+.story-text{
+    color:#bbbbbb;
+    line-height:1.9;
+}
+
+.quote-card{
+    border-left:3px solid #d4af37;
+}
+
+.quote-text{
+    font-style:italic;
+    font-size:1.1rem;
+}
+
+/* ARCHIVE INDEX DIRECTORY */
+
+.archive-container{
+    max-width:1000px;
+    margin:60px auto;
+    padding:0 20px;
+}
+
+.archive-header{
+    margin-bottom:50px;
+}
+
+.archive-header h1{
+    font-family:'Cormorant Garamond', serif;
+    font-size:3rem;
+    color:#d4af37;
+    margin-bottom:10px;
+}
+
+.archive-header p{
+    font-family:'Inter', sans-serif;
+    font-size:1rem;
+    color:#888;
+}
+
+.archive-list{
+    display:flex;
+    flex-direction:column;
+    border-top:1px solid #222;
+}
+
+.archive-list-item{
+    display:flex;
+    align-items:center;
+    padding:25px 10px;
+    border-bottom:1px solid #222;
+    text-decoration:none;
+    color:inherit;
+    transition:all 0.3s ease;
+}
+
+.archive-list-item:hover{
+    background-color:#0c0c0c;
+    padding-left:20px;
+}
+
+.item-number{
+    font-family:'Inter', sans-serif;
+    font-size:1.1rem;
+    color:#d4af37;
+    font-weight:500;
+    width:60px;
+}
+
+.item-meta{
+    flex-grow:1;
+}
+
+.item-meta h2{
+    font-family:'Cormorant Garamond', serif;
+    font-size:1.8rem;
+    color:#f1f1f1;
+    margin:0 0 5px 0;
+}
+
+.item-meta p{
+    font-family:'Inter', sans-serif;
+    font-size:0.95rem;
+    color:#aaa;
+    margin:0;
+}
+
+.item-arrow{
+    font-size:1.5rem;
+    color:#444;
+    transition:color 0.3s ease, transform 0.3s ease;
+}
+
+.archive-list-item:hover .item-arrow{
+    color:#d4af37;
+    transform:translateX(5px);
+}
+
+/* ABOUT PAGE */
+
+.about-container{
+    max-width:800px;
+    margin:80px auto;
+    padding:0 20px;
+}
+
+.about-section{
+    margin-bottom:40px;
+}
+
+.section-tag{
+    font-family:'Inter', sans-serif;
+    font-size:0.8rem;
+    color:#d4af37;
+    letter-spacing:2px;
+    display:block;
+    margin-bottom:15px;
+}
+
+.about-section h1, .about-section h2{
+    font-family:'Cormorant Garamond', serif;
+    color:#f1f1f1;
+    margin-top:0;
+}
+
+.about-section h1{ font-size:3.5rem; margin-bottom:20px; }
+.about-section h2{ font-size:2.5rem; margin-bottom:15px; }
+
+.manifesto, .bio{
+    font-family:'Inter', sans-serif;
+    line-height:1.8;
+}
+
+.manifesto{
+    font-size:1.2rem;
+    color:#ccc;
+}
+
+.bio{
+    font-size:1rem;
+    color:#aaa;
+}
+
+.about-divider{
+    border:0;
+    border-top:1px solid #222;
+    margin:50px 0;
+}
+
 /* HERO REVEAL */
 
 @keyframes heroReveal{

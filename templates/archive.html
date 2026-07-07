@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}The Archive | DL Fantasy{% endblock %}
+{% block content %}
+
+<div class="archive-container">
+
+    <header class="archive-header">
+        <h1>The Archive</h1>
+        <p>A preserved repository of evolving indexes, systemic world structures, and existential records.</p>
+    </header>
+
+    <nav class="archive-list">
+
+        <a href="{% url 'godvalley_list' %}" class="archive-list-item">
+            <span class="item-number">01</span>
+            <div class="item-meta">
+                <h2>God Valley</h2>
+                <p>Story arcs, civilization logs, power dynamics, and core narrative layers.</p>
+            </div>
+            <span class="item-arrow">&rarr;</span>
+        </a>
+
+        <a href="{% url 'concepts' %}" class="archive-list-item">
+            <span class="item-number">02</span>
+            <div class="item-meta">
+                <h2>Concepts</h2>
+                <p>System design, structural ideologies, and architectural paradigms.</p>
+            </div>
+            <span class="item-arrow">&rarr;</span>
+        </a>
+
+        <a href="{% url 'collections' %}" class="archive-list-item">
+            <span class="item-number">03</span>
+            <div class="item-meta">
+                <h2>Collections</h2>
+                <p>Anthologies, compiled fragments, and aggregated contextual logs.</p>
+            </div>
+            <span class="item-arrow">&rarr;</span>
+        </a>
+
+        <a href="{% url 'about' %}" class="archive-list-item">
+            <span class="item-number">04</span>
+            <div class="item-meta">
+                <h2>About</h2>
+                <p>The framework design, administrator profile, and systemic overview of DL Fantasy.</p>
+            </div>
+            <span class="item-arrow">&rarr;</span>
+        </a>
+
+    </nav>
+</div>
+
+{% endblock %}
