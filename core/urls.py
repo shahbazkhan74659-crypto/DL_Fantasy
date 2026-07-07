@@ -1,6 +1,7 @@
 from django.urls import path
 
 from . import views
+from .feeds import LatestContentFeed
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -10,6 +11,8 @@ urlpatterns = [
     path('godvalley/', views.godvalley_list, name='godvalley_list'),
     path('godvalley/chapters/', views.godvalley_chapters, name='godvalley_chapters'),
     path('godvalley/<slug:slug>/', views.godvalley_detail, name='godvalley_detail'),
+    path('search/', views.search, name='search'),
+    path('feed/', LatestContentFeed(), name='feed'),
     path('archive/', views.archive, name='archive'),
     path('concepts/', views.concepts, name='concepts'),
     path('collections/', views.collections, name='collections'),

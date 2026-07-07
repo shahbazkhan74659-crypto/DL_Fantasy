@@ -1,27 +1,14 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<section class="hero">
-    <div class="hero-content parallax">
-        <h1>
-            Where Stories, Mythology, and Reality Collide
-        </h1>
-        <p>
-            DL Fantasy is a personal archive of fiction, philosophy,
-            and knowledge — centered on The God Valley.
-        </p>
-    </div>
-</section>
+{% include '_hero.html' with hero_title="Where Stories, Mythology, and Reality Collide" hero_subtitle="DL Fantasy is a personal archive of fiction, philosophy, and knowledge — centered on The God Valley." %}
 
 <section class="archive">
     <h2>Recent Entries</h2>
     <div class="archive-grid">
         {% for entry in recent %}
-        <a class="archive-card concept-card show"
-           href="{% if entry.category == 'godvalley' %}{% url 'godvalley_detail' entry.slug %}{% else %}{% url 'writings_detail' entry.category entry.slug %}{% endif %}">
-            <h3>{{ entry.title }}</h3>
-            <p>{{ entry.excerpt }}</p>
-        </a>
+        {% if entry.category == 'godvalley' %}{% url 'godvalley_detail' entry.slug as entry_url %}{% else %}{% url 'writings_detail' entry.category entry.slug as entry_url %}{% endif %}
+        {% include '_archive_card.html' with url=entry_url title_text=entry.title body_text=entry.excerpt %}
         {% empty %}
         <p>No entries yet — check back soon.</p>
         {% endfor %}

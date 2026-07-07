@@ -34,6 +34,9 @@ class Content(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['category', 'is_published', '-created_at'], name='content_cat_pub_created_idx'),
+        ]
         constraints = [
             models.UniqueConstraint(fields=['category', 'slug'], name='unique_slug_per_category'),
         ]

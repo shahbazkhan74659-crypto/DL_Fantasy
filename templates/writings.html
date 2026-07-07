@@ -1,32 +1,37 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<section class="hero">
-    <div class="hero-content parallax">
-        <h1>
-            Writings
-        </h1>
-        <p>
-            Fiction, philosophy, and mythology — everything outside The God Valley.
-        </p>
-    </div>
-</section>
+{% include '_hero.html' with hero_title="Writings" hero_subtitle="Fiction, philosophy, and mythology — everything outside The God Valley." %}
 
 <section class="archive">
     <h2>Grand Archive of Thoughts</h2>
     <div class="archive-grid">
-        <a class="archive-card concept-card show" href="{% url 'writings_category_list' 'fiction' %}">
-            <h3>Fiction</h3>
-            <p>{% with entry=highlights.fiction %}{% if entry %}{{ entry.excerpt|default:entry.title }}{% else %}Short stories, one-offs.{% endif %}{% endwith %}</p>
-        </a>
-        <a class="archive-card concept-card show" href="{% url 'writings_category_list' 'philosophy' %}">
-            <h3>Philosophy</h3>
-            <p>{% with entry=highlights.philosophy %}{% if entry %}{{ entry.excerpt|default:entry.title }}{% else %}Ideas, worldview pieces.{% endif %}{% endwith %}</p>
-        </a>
-        <a class="archive-card concept-card show" href="{% url 'writings_category_list' 'mythology' %}">
-            <h3>Mythology</h3>
-            <p>{% with entry=highlights.mythology %}{% if entry %}{{ entry.excerpt|default:entry.title }}{% else %}Myths, cosmology, lore.{% endif %}{% endwith %}</p>
-        </a>
+        {% url 'writings_category_list' 'fiction' as fiction_url %}
+        {% with entry=highlights.fiction %}
+        {% if entry %}
+        {% include '_archive_card.html' with url=fiction_url title_text="Fiction" body_text=entry.excerpt|default:entry.title %}
+        {% else %}
+        {% include '_archive_card.html' with url=fiction_url title_text="Fiction" body_text="Short stories, one-offs." %}
+        {% endif %}
+        {% endwith %}
+
+        {% url 'writings_category_list' 'philosophy' as philosophy_url %}
+        {% with entry=highlights.philosophy %}
+        {% if entry %}
+        {% include '_archive_card.html' with url=philosophy_url title_text="Philosophy" body_text=entry.excerpt|default:entry.title %}
+        {% else %}
+        {% include '_archive_card.html' with url=philosophy_url title_text="Philosophy" body_text="Ideas, worldview pieces." %}
+        {% endif %}
+        {% endwith %}
+
+        {% url 'writings_category_list' 'mythology' as mythology_url %}
+        {% with entry=highlights.mythology %}
+        {% if entry %}
+        {% include '_archive_card.html' with url=mythology_url title_text="Mythology" body_text=entry.excerpt|default:entry.title %}
+        {% else %}
+        {% include '_archive_card.html' with url=mythology_url title_text="Mythology" body_text="Myths, cosmology, lore." %}
+        {% endif %}
+        {% endwith %}
     </div>
 </section>
 

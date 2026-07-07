@@ -2,13 +2,7 @@
 {% block title %}Chapters | The God Valley | DL Fantasy{% endblock %}
 {% block content %}
 
-<section class="hero">
-    <div class="hero-content parallax">
-        <h1>
-            Chapters
-        </h1>
-    </div>
-</section>
+{% include '_hero.html' with hero_title="Chapters" %}
 
 <section class="archive">
     <form class="search-box" method="get" action="{% url 'godvalley_chapters' %}">
@@ -25,6 +19,7 @@
         <p>No chapters match your search.</p>
         {% endfor %}
     </div>
+    {% include '_pagination.html' with page_obj=chapters query=query %}
 </section>
 
 {% endblock %}
