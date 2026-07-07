@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<section class="hero">
+    <div class="hero-content parallax">
+        <h1>
+            Chapter {{ chapter.chapter_number }} — {{ chapter.title }}
+        </h1>
+    </div>
+</section>
+
+<section class="archive">
+    <div class="chapter-content">
+        {{ chapter.body|linebreaks }}
+    </div>
+
+    <div class="chapter-nav">
+        {% if prev_chapter %}
+        <a class="btn-outline" href="{% url 'godvalley_detail' prev_chapter.slug %}">&larr; Ch. {{ prev_chapter.chapter_number }}</a>
+        {% else %}
+        <span></span>
+        {% endif %}
+
+        {% if next_chapter %}
+        <a class="btn-outline" href="{% url 'godvalley_detail' next_chapter.slug %}">Ch. {{ next_chapter.chapter_number }} &rarr;</a>
+        {% else %}
+        <span></span>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

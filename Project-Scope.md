@@ -78,6 +78,7 @@ authenticated surface, and it's for me only.
 - MySQL for the database (fine at this scale; no reason to add Postgres yet).
 - Plain Django templates + the existing `static/` assets — no frontend
   framework, no build step.
+- Three Apps Users, Upload, and Core. Users for manage and store the users(Only Admin for now. In future normal user too). Upload for a central Table where all contents will live, all category Contents(like Fictional, Philosophies, Mythology, etc., and for God Valley we will create a separate dedicated table for it in future).
 
 ## Open Questions (revisit as needed)
 

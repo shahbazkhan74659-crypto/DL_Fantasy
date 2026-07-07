@@ -6,6 +6,26 @@
         <h1>
             Writings
         </h1>
+        <p>
+            Fiction, philosophy, and mythology — everything outside The God Valley.
+        </p>
+    </div>
+</section>
+
+<section class="archive">
+    <div class="archive-grid">
+        <a class="archive-card concept-card show" href="{% url 'writings_category_list' 'fiction' %}">
+            <h3>Fiction</h3>
+            <p>{% with entry=highlights.fiction %}{% if entry %}{{ entry.excerpt|default:entry.title }}{% else %}Short stories, one-offs.{% endif %}{% endwith %}</p>
+        </a>
+        <a class="archive-card concept-card show" href="{% url 'writings_category_list' 'philosophy' %}">
+            <h3>Philosophy</h3>
+            <p>{% with entry=highlights.philosophy %}{% if entry %}{{ entry.excerpt|default:entry.title }}{% else %}Ideas, worldview pieces.{% endif %}{% endwith %}</p>
+        </a>
+        <a class="archive-card concept-card show" href="{% url 'writings_category_list' 'mythology' %}">
+            <h3>Mythology</h3>
+            <p>{% with entry=highlights.mythology %}{% if entry %}{{ entry.excerpt|default:entry.title }}{% else %}Myths, cosmology, lore.{% endif %}{% endwith %}</p>
+        </a>
     </div>
 </section>
 

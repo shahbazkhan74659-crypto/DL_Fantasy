@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<section class="hero">
+    <div class="hero-content parallax">
+        <h1>
+            {{ entry.title }}
+        </h1>
+        <p class="meta">
+            {{ entry.get_category_display }} · {{ entry.created_at|date:"F j, Y" }}
+        </p>
+    </div>
+</section>
+
+<section class="archive">
+    <div class="chapter-content">
+        {{ entry.body|linebreaks }}
+    </div>
+
+    <div class="chapter-nav">
+        <a class="btn-outline" href="{% url 'writings_category_list' entry.category %}">
+            &larr; Back to {{ entry.get_category_display }}
+        </a>
+    </div>
+</section>
+
+{% endblock %}

@@ -13,4 +13,19 @@
     </div>
 </section>
 
+<section class="archive">
+    <h2>Recent Entries</h2>
+    <div class="archive-grid">
+        {% for entry in recent %}
+        <a class="archive-card concept-card show"
+           href="{% if entry.category == 'godvalley' %}{% url 'godvalley_detail' entry.slug %}{% else %}{% url 'writings_detail' entry.category entry.slug %}{% endif %}">
+            <h3>{{ entry.title }}</h3>
+            <p>{{ entry.excerpt }}</p>
+        </a>
+        {% empty %}
+        <p>No entries yet — check back soon.</p>
+        {% endfor %}
+    </div>
+</section>
+
 {% endblock %}

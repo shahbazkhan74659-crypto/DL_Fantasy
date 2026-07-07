@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<section class="hero">
+    <div class="hero-content parallax">
+        <h1>
+            The God Valley
+        </h1>
+    </div>
+</section>
+
+<section class="archive">
+    <form class="search-box" method="get" action="{% url 'godvalley_list' %}">
+        <input type="text" name="q" placeholder="Search chapters by title…" value="{{ query }}">
+    </form>
+
+    <div class="archive-grid">
+        {% for chapter in chapters %}
+        <a class="archive-card concept-card show" href="{% url 'godvalley_detail' chapter.slug %}">
+            <h3>Ch. {{ chapter.chapter_number }} — {{ chapter.title }}</h3>
+            <p>{{ chapter.excerpt }}</p>
+        </a>
+        {% empty %}
+        <p>No chapters match your search.</p>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}
