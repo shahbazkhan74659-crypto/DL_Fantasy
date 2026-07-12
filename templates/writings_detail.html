@@ -1,9 +1,12 @@
 {% extends 'base.html' %}
 {% block content %}
 
-{% with formatted_date=entry.created_at|date:"F j, Y" %}
-{% include '_hero.html' with hero_title=entry.title hero_meta=entry.get_category_display|add:" · "|add:formatted_date %}
-{% endwith %}
+<section class="hero">
+    <div class="hero-content parallax">
+        <h1>{{ entry.title }}</h1>
+        <p class="meta">{{ entry.get_category_display }} · {{ entry.created_at|date:"F j, Y" }}</p>
+    </div>
+</section>
 
 <section class="archive">
     <div class="chapter-content">

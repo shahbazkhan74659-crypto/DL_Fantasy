@@ -1,0 +1,39 @@
+from django import forms
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, UserCreationForm
+
+from users.models import User
+
+FIELD_ATTRS = {'class': 'auth-field', 'autocomplete': 'off'}
+
+
+class SignupForm(UserCreationForm):
+    email = forms.EmailField(required=True, widget=forms.EmailInput(attrs=FIELD_ATTRS))
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'password1', 'password2')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ('username', 'password1', 'password2'):
+            self.fields[name].widget.attrs.update(FIELD_ATTRS)
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if User.objects.filter(email__iexact=email).exists():
+            raise forms.ValidationError('An account with this email already exists.')
+        return email
+
+
+class StyledAuthenticationForm(AuthenticationForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update(FIELD_ATTRS)
+
+
+class StyledPasswordChangeForm(PasswordChangeForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update(FIELD_ATTRS)

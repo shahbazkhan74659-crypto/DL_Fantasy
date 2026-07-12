@@ -1,7 +1,22 @@
 {% extends 'base.html' %}
 {% block content %}
 
-{% include '_hero.html' with hero_title="Where Stories, Mythology, and Reality Collide" hero_subtitle="DL Fantasy is a personal archive of fiction, philosophy, and knowledge — centered on The God Valley." %}
+<section class="home-search">
+    <form class="home-search-form" action="{% url 'search' %}" method="get">
+        <span class="section-tag">Search the Archive</span>
+        <div class="home-search-field">
+            <input type="text" name="q" placeholder="Search titles across Writings and The God Valley…" value="{{ request.GET.q }}" aria-label="Search the archive">
+            <button type="submit" class="btn">Search</button>
+        </div>
+    </form>
+</section>
+
+<section class="hero">
+    <div class="hero-content parallax">
+        <h1>Where Stories, Mythology, and Reality Collide</h1>
+        <p>DL Fantasy is a personal archive of fiction, philosophy, and knowledge — centered on The God Valley.</p>
+    </div>
+</section>
 
 <section class="archive">
     <h2>Recent Entries</h2>

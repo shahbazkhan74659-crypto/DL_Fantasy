@@ -1,7 +1,11 @@
 {% extends 'base.html' %}
 {% block content %}
 
-{% include '_hero.html' with hero_title=category_label %}
+<section class="hero">
+    <div class="hero-content parallax">
+        <h1>{{ category_label }}</h1>
+    </div>
+</section>
 
 <section class="archive">
     <div class="archive-grid">

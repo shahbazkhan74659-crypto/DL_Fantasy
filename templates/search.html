@@ -2,7 +2,11 @@
 {% block title %}Search | DL Fantasy{% endblock %}
 {% block content %}
 
-{% include '_hero.html' with hero_title="Search" %}
+<section class="hero">
+    <div class="hero-content parallax">
+        <h1>Search</h1>
+    </div>
+</section>
 
 <section class="archive">
     <form class="search-box" method="get" action="{% url 'search' %}">

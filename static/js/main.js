@@ -140,19 +140,26 @@ window.addEventListener("pageshow", () => {
 const parallaxElements =
 document.querySelectorAll(".parallax");
 
-window.addEventListener("scroll", () => {
+const prefersReducedMotion =
+window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    const scrollY =
-    window.scrollY;
+if(!prefersReducedMotion){
 
-    parallaxElements.forEach((element) => {
+    window.addEventListener("scroll", () => {
 
-        element.style.transform =
-        `translateY(${scrollY * 0.2}px)`;
+        const scrollY =
+        window.scrollY;
+
+        parallaxElements.forEach((element) => {
+
+            element.style.transform =
+            `translateY(${scrollY * 0.2}px)`;
+
+        });
 
     });
 
-});
+}
 
 // ACTIVE NAVBAR LINK
 
@@ -192,6 +199,73 @@ if(profileCircle){
 
         profileCircle.style.transform =
         "translateY(0px) scale(1)";
+
+    });
+
+}
+
+// SIDE DRAWER MENU
+
+const menuToggle =
+document.querySelector(".menu-toggle");
+
+const sideDrawer =
+document.querySelector("#side-drawer");
+
+const drawerOverlay =
+document.querySelector("#drawer-overlay");
+
+const drawerClose =
+document.querySelector(".drawer-close");
+
+if(menuToggle && sideDrawer && drawerOverlay){
+
+    const openDrawer = () => {
+
+        sideDrawer.classList.add("is-open");
+        drawerOverlay.classList.add("is-open");
+        menuToggle.classList.add("is-open");
+        menuToggle.setAttribute("aria-expanded", "true");
+        sideDrawer.setAttribute("aria-hidden", "false");
+
+    };
+
+    const closeDrawer = () => {
+
+        sideDrawer.classList.remove("is-open");
+        drawerOverlay.classList.remove("is-open");
+        menuToggle.classList.remove("is-open");
+        menuToggle.setAttribute("aria-expanded", "false");
+        sideDrawer.setAttribute("aria-hidden", "true");
+
+    };
+
+    menuToggle.addEventListener("click", () => {
+
+        if(sideDrawer.classList.contains("is-open")){
+
+            closeDrawer();
+
+        } else {
+
+            openDrawer();
+        }
+
+    });
+
+    drawerOverlay.addEventListener("click", closeDrawer);
+
+    if(drawerClose){
+
+        drawerClose.addEventListener("click", closeDrawer);
+    }
+
+    window.addEventListener("keydown", (e) => {
+
+        if(e.key === "Escape"){
+
+            closeDrawer();
+        }
 
     });
 

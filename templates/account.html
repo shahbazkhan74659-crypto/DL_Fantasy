@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}Account | DL Fantasy{% endblock %}
+{% block content %}
+
+<div class="auth-container">
+
+    <section class="auth-section">
+        <span class="section-tag">Account Access</span>
+        <h1>{{ user.username }}</h1>
+    </section>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <dl class="account-meta">
+        <div>
+            <dt>Owner</dt>
+            <dd>{{ user.get_full_name|default:user.username }}</dd>
+        </div>
+        <div>
+            <dt>Username</dt>
+            <dd>{{ user.username }}</dd>
+        </div>
+        <div>
+            <dt>Email</dt>
+            <dd>{{ user.email }}</dd>
+        </div>
+        <div>
+            <dt>Account Created</dt>
+            <dd>{{ user.date_joined|date:"F j, Y" }}</dd>
+        </div>
+        <div>
+            <dt>Last Login</dt>
+            <dd>{{ user.last_login|date:"F j, Y, g:i a"|default:"—" }}</dd>
+        </div>
+        <div>
+            <dt>Visits (Last 30 Days)</dt>
+            <dd>{{ visit_count_30d }}</dd>
+        </div>
+    </dl>
+
+    <section class="account-chart">
+        <h2>Visit Activity</h2>
+        <div class="login-chart">
+            {% for day in visit_days %}
+            <div class="login-chart-bar" style="height:{% widthratio day.count max_count 100 %}%;" data-count="{{ day.count }}" title="{{ day.date|date:'M j' }}: {% if day.count %}visited{% else %}no visit{% endif %}"></div>
+            {% endfor %}
+        </div>
+        <p class="chart-caption">Last 30 days</p>
+    </section>
+
+    <div class="account-actions">
+        <a href="{% url 'password_change' %}" class="btn-outline">Change Password</a>
+    </div>
+
+</div>
+
+{% endblock %}

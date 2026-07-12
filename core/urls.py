@@ -1,7 +1,9 @@
+from django.contrib.auth import views as auth_views
 from django.urls import path
 
 from . import views
 from .feeds import LatestContentFeed
+from .forms import StyledPasswordChangeForm
 
 urlpatterns = [
     path('', views.home, name='home'),
@@ -17,4 +19,21 @@ urlpatterns = [
     path('concepts/', views.concepts, name='concepts'),
     path('collections/', views.collections, name='collections'),
     path('about/', views.about, name='about'),
+    path('signup/', views.signup, name='signup'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('account/', views.account, name='account'),
+    path(
+        'account/password/',
+        auth_views.PasswordChangeView.as_view(
+            template_name='password_change.html',
+            form_class=StyledPasswordChangeForm,
+        ),
+        name='password_change',
+    ),
+    path(
+        'account/password/done/',
+        auth_views.PasswordChangeDoneView.as_view(template_name='password_change_done.html'),
+        name='password_change_done',
+    ),
 ]

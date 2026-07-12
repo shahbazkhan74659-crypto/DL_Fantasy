@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Log In | DL Fantasy{% endblock %}
+{% block content %}
+
+<div class="auth-container">
+
+    <section class="auth-section">
+        <span class="section-tag">Account Access</span>
+        <h1>Log In</h1>
+    </section>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form class="auth-form" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+
+        {% if form.non_field_errors %}
+        <p class="form-error">{{ form.non_field_errors|join:", " }}</p>
+        {% endif %}
+
+        <div class="auth-field-group">
+            <label for="{{ form.username.id_for_label }}">Username</label>
+            {{ form.username }}
+            {% if form.username.errors %}<p class="form-error">{{ form.username.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div class="auth-field-group">
+            <label for="{{ form.password.id_for_label }}">Password</label>
+            {{ form.password }}
+            {% if form.password.errors %}<p class="form-error">{{ form.password.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <button type="submit" class="btn">Log In</button>
+    </form>
+
+    <p class="auth-switch">Don't have an account? <a href="{% url 'signup' %}">Signup</a></p>
+
+</div>
+
+{% endblock %}
