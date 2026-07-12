@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, SetPasswordForm, UserCreationForm
 
 from users.models import User
 
@@ -32,7 +32,8 @@ class StyledAuthenticationForm(AuthenticationForm):
             field.widget.attrs.update(FIELD_ATTRS)
 
 
-class StyledPasswordChangeForm(PasswordChangeForm):
+class StyledPasswordChangeForm(SetPasswordForm):
+    """No old-password check for now — revisit once real account security is in scope."""
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
