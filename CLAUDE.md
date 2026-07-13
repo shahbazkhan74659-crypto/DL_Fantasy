@@ -11,7 +11,10 @@ accounts" idea is cancelled** — the site now supports and will keep supporting
 sign up, log in, log out, and a personal account page, with more account-driven features expected
 to build on this. Favourite, Reading List, and Downloads are now real, account-backed features (see
 **Favourites and Reading List** and **Downloads: on-demand PDF export** below); Bookmarks in the
-side drawer is still a placeholder. See **Visitor auth** below for how visitor accounts are built.
+side drawer is gated `{% if user.is_staff %}` — visible to Mr. Dex (admin) only, hidden from regular
+visitors — pending a concrete design for a real visitor-facing version. See the end of
+**Visitor auth** below for the candidate directions considered. See **Visitor auth** below for how
+visitor accounts are built.
 Full intent lives in `Project-Scope.md` — read it for the "why", but see **Divergences from
 Project-Scope.md** below before trusting it for the current page/nav structure, since the build has
 moved past it in a few places.
@@ -285,7 +288,15 @@ both now exist; `/account/` remains the primary post-login landing spot. The sid
 button is a real `POST` form (Django 5's `LogoutView` requires POST); the drawer's own Profile item
 links to `/profile/`; Favourite, Reading List, Downloads, and News are real, account-backed drawer
 items (see **Favourites and Reading List**, **Downloads: on-demand PDF export**, and **News**
-above/below) — only Bookmarks remains a static placeholder, unconnected to any account data.
+above/below) — Bookmarks is deliberately gated `{% if user.is_staff %}` (visible to Mr. Dex only)
+rather than shown to every visitor, since building it as a 4th near-identical "save this content"
+toggle alongside Favourite/Reading List/Downloads would be redundant for regular visitors right now.
+Candidate directions were analyzed but deferred pending a concrete decision: an in-chapter
+reading-position bookmark (jump back to your exact scroll position — the one genuinely novel option,
+since none of the other three track position within content, only whole-item state), custom
+collections/folders (organize saved content beyond one flat Favourites list), or passage/quote
+highlighting (Kindle-style). Once one of these (or something else) is greenlit and built, drop the
+`is_staff` gate so it's visible to all visitors like the other drawer items.
 
 ### Profile (`/profile/`) vs. Account (`/account/`) — two different pages, on purpose
 
