@@ -1,17 +1,21 @@
+import re
 from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
+from django.db.models import Count, DurationField, ExpressionWrapper, F, Sum
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from upload.models import Content
-from users.models import DailyVisit
+from users.models import User, VisitSession
 
+from . import google_oauth
 from .forms import SignupForm, StyledAuthenticationForm
 
 WRITINGS_CATEGORIES = (
@@ -142,12 +146,12 @@ def signup(request):
         form = SignupForm(request.POST)
         if form.is_valid():
             user = form.save()
-            auth_login(request, user)
+            auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             messages.success(request, 'Welcome to DL Fantasy — your account is ready.')
             return redirect('home')
     else:
         form = SignupForm()
-    return render(request, 'signup.html', {'form': form})
+    return render(request, 'signup.html', {'form': form, 'google_oauth_enabled': google_oauth.is_configured()})
 
 
 def login_view(request):
@@ -162,23 +166,103 @@ def login_view(request):
             return redirect(_safe_next(request, next_url))
     else:
         form = StyledAuthenticationForm(request)
-    return render(request, 'login.html', {'form': form, 'next': next_url})
+    return render(request, 'login.html', {
+        'form': form,
+        'next': next_url,
+        'google_oauth_enabled': google_oauth.is_configured(),
+    })
+
+
+def _generate_username_from_email(email):
+    base = re.sub(r'[^\w.@+-]', '', email.split('@')[0])[:140] or 'user'
+    username = base
+    suffix = 1
+    while User.objects.filter(username=username).exists():
+        suffix += 1
+        username = f'{base}{suffix}'[:150]
+    return username
+
+
+def google_login(request):
+    if not google_oauth.is_configured():
+        raise Http404
+    redirect_uri = request.build_absolute_uri(reverse('google_callback'))
+    return redirect(google_oauth.build_authorization_url(request, redirect_uri))
+
+
+def google_callback(request):
+    if not google_oauth.is_configured():
+        raise Http404
+
+    if request.GET.get('error') or not google_oauth.verify_callback_state(request):
+        messages.error(request, 'Google sign-in was cancelled or could not be verified.')
+        return redirect('login')
+
+    code = request.GET.get('code')
+    if not code:
+        messages.error(request, 'Google sign-in failed — please try again.')
+        return redirect('login')
+
+    redirect_uri = request.build_absolute_uri(reverse('google_callback'))
+    try:
+        identity = google_oauth.fetch_identity(code, redirect_uri)
+    except google_oauth.GoogleOAuthError:
+        messages.error(request, 'Google sign-in failed — please try again.')
+        return redirect('login')
+
+    user = (
+        User.objects.filter(google_sub=identity['sub']).first()
+        or User.objects.filter(email__iexact=identity['email']).first()
+    )
+    if user is None:
+        user = User(username=_generate_username_from_email(identity['email']), email=identity['email'])
+        user.set_unusable_password()
+
+    user.google_sub = identity['sub']
+    user.google_picture_url = identity['picture']
+    user.save()
+
+    auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    messages.success(request, f"Welcome, {user.username}.")
+    return redirect('account')
 
 
 @login_required
 def account(request):
     today = timezone.localdate()
     start_date = today - timedelta(days=29)
-    visited_dates = set(
-        DailyVisit.objects.filter(user=request.user, date__gte=start_date).values_list('date', flat=True)
-    )
-    visit_days = [
-        {'date': start_date + timedelta(days=i), 'count': int((start_date + timedelta(days=i)) in visited_dates)}
-        for i in range(30)
-    ]
+
+    duration = ExpressionWrapper(F('last_seen_at') - F('started_at'), output_field=DurationField())
+    stats_by_date = {
+        row['date']: row
+        for row in (
+            VisitSession.objects.filter(user=request.user, date__gte=start_date)
+            .annotate(duration=duration)
+            .values('date')
+            .annotate(count=Count('id'), total_duration=Sum('duration'))
+        )
+    }
+
+    visit_days = []
+    for i in range(30):
+        d = start_date + timedelta(days=i)
+        stat = stats_by_date.get(d)
+        count = stat['count'] if stat else 0
+        total_duration = stat['total_duration'] if stat and stat['total_duration'] else timedelta()
+        visit_days.append({
+            'date': d,
+            'count': count,
+            'minutes': int(total_duration.total_seconds() // 60),
+        })
+
     visit_count_30d = sum(day['count'] for day in visit_days)
+    total_minutes_30d = sum(day['minutes'] for day in visit_days)
+    max_count = max((day['count'] for day in visit_days), default=0) or 1
+
     return render(request, 'account.html', {
         'visit_days': visit_days,
         'visit_count_30d': visit_count_30d,
-        'max_count': 1,
+        'total_hours_30d': total_minutes_30d // 60,
+        'total_minutes_30d': total_minutes_30d % 60,
+        'max_count': max_count,
     })

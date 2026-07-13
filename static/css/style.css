@@ -1130,6 +1130,113 @@ footer small{
     font-size:0.85rem;
 }
 
+.form-error:empty{
+    display:none;
+}
+
+.auth-field.is-invalid{
+    border-color:var(--danger);
+}
+
+/* AUTH CARD (login / signup) */
+
+.auth-page{
+    min-height:calc(100vh - 260px);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:var(--space-2xl) var(--gutter);
+}
+
+.auth-card{
+    position:relative;
+    width:100%;
+    max-width:420px;
+    background:var(--bg-secondary);
+    border:1px solid var(--border-dark);
+    border-radius:var(--radius-md);
+    padding:var(--space-xl) var(--space-lg) var(--space-lg);
+    box-shadow:var(--shadow-card), 0 0 120px -40px var(--gold-glow);
+    overflow:hidden;
+}
+
+.auth-card::before{
+    content:"";
+    position:absolute;
+    top:0;
+    left:0;
+    right:0;
+    height:2px;
+    background:linear-gradient(90deg, transparent, var(--gold) 50%, transparent);
+}
+
+.auth-card .auth-section{
+    text-align:center;
+    margin-bottom:var(--space-lg);
+}
+
+.auth-card .auth-section h1{
+    font-size:clamp(1.9rem, 1.4rem + 1.6vw, 2.5rem);
+}
+
+.auth-card .section-tag{
+    text-align:center;
+}
+
+.auth-card .auth-form{
+    max-width:none;
+}
+
+.auth-card .auth-switch{
+    text-align:center;
+}
+
+.btn-google{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    width:100%;
+    padding:12px 20px;
+    background:var(--bg-raised);
+    border:1px solid var(--border-dark);
+    border-radius:var(--radius-sm);
+    color:var(--text-primary);
+    font-family:'Inter', sans-serif;
+    font-size:0.95rem;
+    font-weight:500;
+    text-decoration:none;
+    cursor:pointer;
+    transition:border-color 0.25s var(--ease), transform 0.25s var(--ease);
+}
+
+.btn-google:hover{
+    border-color:var(--gold-dim);
+    transform:translateY(-2px);
+}
+
+.btn-google svg{
+    flex-shrink:0;
+}
+
+.auth-divider{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin:var(--space-lg) 0;
+    color:var(--text-faint);
+    font-size:0.8rem;
+    letter-spacing:0.5px;
+}
+
+.auth-divider::before,
+.auth-divider::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--border-dark);
+}
+
 /* MESSAGES (django.contrib.messages) */
 
 .messages{

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import DailyVisit, LoginHistory, User
+from .models import LoginHistory, User, VisitSession
 
 admin.site.register(User, UserAdmin)
 
@@ -14,9 +14,14 @@ class LoginHistoryAdmin(admin.ModelAdmin):
     readonly_fields = ('user', 'timestamp', 'ip_address')
 
 
-@admin.register(DailyVisit)
-class DailyVisitAdmin(admin.ModelAdmin):
-    list_display = ('user', 'date')
-    list_filter = ('user',)
-    ordering = ('-date',)
-    readonly_fields = ('user', 'date')
+@admin.register(VisitSession)
+class VisitSessionAdmin(admin.ModelAdmin):
+    list_display = ('user', 'date', 'started_at', 'last_seen_at', 'duration')
+    list_filter = ('user', 'date')
+    ordering = ('-started_at',)
+    readonly_fields = ('user', 'date', 'started_at', 'last_seen_at')
+
+    @admin.display(description='Duration')
+    def duration(self, obj):
+        minutes = int((obj.last_seen_at - obj.started_at).total_seconds() // 60)
+        return f"{minutes // 60}h {minutes % 60}m" if minutes >= 60 else f"{minutes}m"

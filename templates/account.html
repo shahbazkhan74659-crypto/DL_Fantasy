@@ -42,16 +42,20 @@
             <dt>Visits (Last 30 Days)</dt>
             <dd>{{ visit_count_30d }}</dd>
         </div>
+        <div>
+            <dt>Time Spent (Last 30 Days)</dt>
+            <dd>{{ total_hours_30d }}h {{ total_minutes_30d }}m</dd>
+        </div>
     </dl>
 
     <section class="account-chart">
         <h2>Visit Activity</h2>
         <div class="login-chart">
             {% for day in visit_days %}
-            <div class="login-chart-bar" style="height:{% widthratio day.count max_count 100 %}%;" data-count="{{ day.count }}" title="{{ day.date|date:'M j' }}: {% if day.count %}visited{% else %}no visit{% endif %}"></div>
+            <div class="login-chart-bar" style="height:{% widthratio day.count max_count 100 %}%;" data-count="{{ day.count }}" title="{{ day.date|date:'M j' }}: {{ day.count }} visit{{ day.count|pluralize }}, {{ day.minutes }}m"></div>
             {% endfor %}
         </div>
-        <p class="chart-caption">Last 30 days</p>
+        <p class="chart-caption">Last 30 days &mdash; bar height is visit count, hover for time spent</p>
     </section>
 
     <div class="account-actions">

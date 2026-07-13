@@ -26,10 +26,22 @@ class SignupForm(UserCreationForm):
 
 
 class StyledAuthenticationForm(AuthenticationForm):
+    """Asks for email rather than username — the 'username' field name is kept internally
+    (only its label/widget change) since AuthenticationForm.clean() always calls
+    authenticate(username=<value>, ...), which users.backends.EmailBackend then resolves by email.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['username'].label = 'Email'
+        self.fields['username'].widget = forms.EmailInput(attrs=FIELD_ATTRS)
         for field in self.fields.values():
             field.widget.attrs.update(FIELD_ATTRS)
+
+    def get_invalid_login_error(self):
+        return forms.ValidationError(
+            'Please enter a correct email and password. Note that both fields may be case-sensitive.',
+            code='invalid_login',
+        )
 
 
 class StyledPasswordChangeForm(SetPasswordForm):

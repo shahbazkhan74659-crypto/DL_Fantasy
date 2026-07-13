@@ -41,7 +41,7 @@ Three apps, one Django project (`dlfantasy/`):
   `AUTH_USER_MODEL = 'users.User'` from the very first migration (so the later switch to real
   visitor accounts — see **Visitor auth** below — never needed a destructive user-table migration;
   don't revert to `django.contrib.auth.User`). The app also owns two auth-adjacent models,
-  `LoginHistory` and `DailyVisit`, plus `signals.py` / `middleware.py` / `utils.py` /
+  `LoginHistory` and `VisitSession`, plus `signals.py` / `middleware.py` / `utils.py` /
   `context_processors.py` supporting visitor auth.
 - **`upload`** — owns the single `Content` model, a central table for *all* long-form content:
   Fiction, Philosophy, Mythology, and God Valley chapters, distinguished by a `category`
@@ -122,26 +122,79 @@ since `core` already reaches into other apps' models directly (`from upload.mode
 is deliberately no current-password check on `/account/password/` right now (removed at explicit
 request; revisit once real account security is in scope).
 
+The public login form (`/login/`) authenticates by **email**, not username, even though `User`'s
+`USERNAME_FIELD` is still `username` (unchanged, so `createsuperuser`/admin login are unaffected).
+`StyledAuthenticationForm` keeps the form field internally named `username` — required, since
+Django's `AuthenticationForm.clean()` always calls `authenticate(username=<value>, ...)` regardless
+of the field's label — and just relabels it "Email" with an `EmailInput` widget; the actual email
+lookup happens in `users/backends.py`'s `EmailBackend.authenticate()`, which resolves the typed
+value via `email__iexact` instead of the default username lookup. `AUTHENTICATION_BACKENDS`
+(`settings.py`) lists `EmailBackend` before Django's own `ModelBackend` rather than replacing it, so
+Django admin's separate username-based login form keeps working through the same setting. There is
+no DB-level uniqueness constraint on `email` (MySQL doesn't support the partial/conditional unique
+index that would be needed to allow multiple blank emails while still forbidding duplicate real
+ones) — `SignupForm.clean_email()` enforces uniqueness at the application level instead;
+`EmailBackend` treats an unexpected duplicate as a failed login (via `MultipleObjectsReturned`)
+rather than guessing which account was meant.
+
 `users/models.py` has two auth-adjacent models beyond `User`:
 - **`LoginHistory`** — one row per successful login, populated via the `user_logged_in` signal
   (`users/signals.py`, connected in `users/apps.py`'s `ready()`). Admin-visible but not currently
   surfaced on any page.
-- **`DailyVisit`** — one row per `(user, date)`, deduped so browsing many pages in one day only
-  counts once. Populated by `users/middleware.py`'s `TrackDailyVisitMiddleware` (registered in
-  `MIDDLEWARE`, after `AuthenticationMiddleware`). This — not `LoginHistory` — powers the "Visits
-  (Last 30 Days)" figure and the pure-CSS bar chart on the account page: sessions persist
-  indefinitely once logged in, so a raw login count wouldn't reflect actual site engagement the way
-  a deduped daily-visit count does.
+- **`VisitSession`** — one row per distinct *visit* (a burst of activity), not per day. Populated
+  by `users/middleware.py`'s `TrackVisitSessionsMiddleware` (registered in `MIDDLEWARE`, after
+  `AuthenticationMiddleware`): each authenticated request either starts a new row (`started_at` =
+  `last_seen_at` = now) or bumps an existing row's `last_seen_at`, based on a 30-minute inactivity
+  gap (`SESSION_GAP`) tracked in the Django session, with an explicit calendar-day-rollover check so
+  a visit spanning midnight doesn't get misattributed. Visit count and time-on-site are both derived
+  at query time — `core.views.account` groups by `date` and computes `Count('id')` /
+  `Sum(last_seen_at - started_at)` — rather than stored as a running total, so there's no stale
+  aggregate to drift from reality. This — not `LoginHistory` — powers the "Visits (Last 30 Days)"
+  and "Time Spent (Last 30 Days)" figures and the pure-CSS bar chart on the account page: sessions
+  persist indefinitely once logged in, so a raw login count wouldn't reflect actual site engagement
+  the way per-visit tracking does.
 
-Profile photo is Gravatar-derived, not uploaded: `users/utils.py` hashes the account's email into a
-gravatar.com URL, exposed site-wide via `users/context_processors.py`'s `avatar` context processor
-(registered in `TEMPLATES.OPTIONS.context_processors`) so `base.html`'s navbar can render it on
-every page without each view passing it manually. `LOGIN_URL` / `LOGIN_REDIRECT_URL` /
-`LOGOUT_REDIRECT_URL` are set in `settings.py` (there were no defaults before this feature).
+Profile photo prefers a real Google account photo, falling back to Gravatar, not uploaded:
+`users/context_processors.py`'s `avatar` context processor (registered in
+`TEMPLATES.OPTIONS.context_processors`) exposes a single `avatar_url` site-wide — `User.
+google_picture_url` if the account has signed in with Google at least once, else a Gravatar URL
+hashed from the account's email (`users/utils.py`). This two-tier fallback exists because Gravatar
+and a Google/Gmail account photo are unrelated services — hashing an email only looks up a Gravatar
+profile, which most Gmail addresses don't have, so Gravatar alone silently showed a generic
+mystery-person icon instead of the photo people actually expected. `LOGIN_URL` /
+`LOGIN_REDIRECT_URL` / `LOGOUT_REDIRECT_URL` are set in `settings.py` (there were no defaults
+before the visitor-auth feature).
+
+### "Sign in with Google": `core/google_oauth.py`
+
+A hand-rolled (not django-allauth) OAuth2 client, deliberately minimal since the only thing it's
+for is pulling a verified email/name/photo — pulling in a full social-auth framework for that would
+be a lot of surface for one provider. `google_login`/`google_callback` (`core/views.py`, wired in
+`core/urls.py`) drive the flow: `google_login` redirects to Google's consent screen with a random
+per-session `state` (CSRF protection, single-use, popped from the session on callback);
+`google_callback` exchanges the returned `code` for tokens via `requests`, then verifies the
+`id_token`'s signature/issuer/audience/expiry with `google.oauth2.id_token.verify_oauth2_token`
+(the `google-auth` package) rather than decoding the JWT by hand — hand-rolled JWT verification is
+exactly the kind of thing that quietly becomes a security hole. Matching an incoming Google
+identity to a local `User` prefers `User.google_sub` (Google's stable per-account ID — the actual
+identity, since emails can change) and falls back to `email__iexact` to link an existing
+password-based account the first time someone uses Google on it; if neither matches, a new `User`
+is created with `set_unusable_password()` (Google-only accounts can't log in via the password form)
+and a username auto-derived from the email's local part, deduped against existing usernames.
+
+The whole feature is optional and self-hiding: `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET`
+are read via `os.environ.get(...)` with an empty-string default (unlike the mandatory `DB_*` vars
+above, which deliberately crash on startup if unset) — `google_oauth.is_configured()` gates both
+views (404 if unset) and the "Continue with Google" button on `login.html`/`signup.html` (hidden
+via `google_oauth_enabled` in each view's context), so a checkout of this repo without Google
+credentials in `.env` runs exactly as it did before this feature existed. Getting real credentials
+requires a free Google Cloud Console project + OAuth Client ID (no billing needed for the
+`openid`/`email`/`profile` scopes used here) — that step has to be done by whoever owns the Google
+Cloud project, not from inside this codebase.
 
 The navbar's profile-circle button (`base.html`) is conditional: an anonymous visitor sees a
-generic person-icon SVG linking to `/login/`; a logged-in visitor sees their Gravatar image linking
-to `/account/` (not a future "Profile" page — that's a separate, not-yet-built page). The side
+generic person-icon SVG linking to `/login/`; a logged-in visitor sees their `avatar_url` image
+linking to `/account/` (not a future "Profile" page — that's a separate, not-yet-built page). The side
 drawer's Logout button is a real `POST` form (Django 5's `LogoutView` requires POST); the other
 drawer items (Favourite, Bookmarks, Reading List, Downloads, News) are still static placeholders,
 unconnected to any account data.
@@ -200,13 +253,28 @@ deliberately introduced. Trust the code over the doc on these points:
   gitignored and no longer read by `settings.py`; safe to delete manually, not done automatically
   here since it wasn't asked for.
 
-## Planned direction
+## Client-side validation: Zod, vendored, no build step
 
-- **Form validation → Zod.** All current forms (`core/forms.py`'s `SignupForm`,
-  `StyledAuthenticationForm`, `StyledPasswordChangeForm`, plus the `?q=` search inputs) are
-  server-side Django `forms.Form`/`forms.ModelForm` validation only, no client-side validation
-  layer. The intended direction is to move form validation to Zod. Note this is currently
-  unreconciled with **"Commands"** above stating there's no frontend build step — Zod is a
-  TypeScript/JS schema library with zero wiring into this project today, so adopting it means
-  deciding how it's delivered (a vendored/CDN `<script>` kept build-step-free, vs. introducing an
-  actual JS build step) as part of that migration, not an assumption to carry over silently.
+`login.html` and `signup.html` now have client-side validation via Zod, layered on top of (not
+replacing) the existing server-side Django `forms.Form`/`forms.ModelForm` validation in
+`core/forms.py` — Django remains the source of truth; the client-side layer is purely a fast-fail
+UX improvement. Delivery keeps the "no frontend build step" constraint from **Commands** above:
+Zod's ESM bundle is vendored at `static/js/vendor/zod.js` (fetched from jsdelivr's `+esm` build,
+external sourcemap comment stripped) rather than loaded from a CDN at runtime — consistent with how
+this project already self-hosts fonts instead of using a CDN. `static/js/auth-forms.js` is a
+`type="module"` script, loaded only on the two auth pages via `base.html`'s `{% block extra_js %}`
+(not site-wide), that defines a schema per form (`login`, `signup` — keyed off the form's
+`data-zod` attribute) mirroring the server-side rules (username charset/length, email format,
+`AUTH_PASSWORD_VALIDATORS`' min-length-8 and not-all-numeric checks, password confirmation match).
+On submit it writes per-field messages into each field's `[data-field-error="<name>"]` element and
+calls `event.preventDefault()` only when invalid; a passing client-side check lets the native POST
+through to Django unmodified, so the flow still works end-to-end with JS disabled — Django just
+does all the validating in that case, same as before. `StyledPasswordChangeForm` and the `?q=`
+search inputs are **not** wired to Zod yet — this covers login/signup only so far.
+
+Both auth pages also moved into a centered `.auth-card` (see `static/css/style.css`'s "AUTH CARD"
+block) — a boxed, vertically-centered card with a thin gold top hairline and ambient
+`--gold-glow` bloom (a previously-declared-but-unused token), rather than the old plain
+left-aligned column. `account.html` intentionally still uses the older plain `.auth-container`
+layout, not `.auth-card` — its content (stats grid, activity chart) doesn't fit a narrow centered
+card the way a short credentials form does.

@@ -21,6 +21,8 @@ urlpatterns = [
     path('about/', views.about, name='about'),
     path('signup/', views.signup, name='signup'),
     path('login/', views.login_view, name='login'),
+    path('login/google/', views.google_login, name='google_login'),
+    path('login/google/callback/', views.google_callback, name='google_callback'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('account/', views.account, name='account'),
     path(
