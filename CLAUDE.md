@@ -9,12 +9,12 @@ and mythology writing, centered on a flagship story called "The God Valley". Con
 single-author (only Mr. Dex writes/publishes, via Django admin). **The original "no visitor
 accounts" idea is cancelled** — the site now supports and will keep supporting real user accounts:
 sign up, log in, log out, and a personal account page, with more account-driven features expected
-to build on this. Favourite and Reading List are now real, account-backed features (see
-**Favourites and Reading List** below); Bookmarks and Downloads in the side drawer are still
-placeholders. See **Visitor auth** below for how visitor accounts are built. Full intent lives in
-`Project-Scope.md` — read it for the "why", but see **Divergences from Project-Scope.md** below
-before trusting it for the current page/nav structure, since the build has moved past it in a few
-places.
+to build on this. Favourite, Reading List, and Downloads are now real, account-backed features (see
+**Favourites and Reading List** and **Downloads: on-demand PDF export** below); Bookmarks in the
+side drawer is still a placeholder. See **Visitor auth** below for how visitor accounts are built.
+Full intent lives in `Project-Scope.md` — read it for the "why", but see **Divergences from
+Project-Scope.md** below before trusting it for the current page/nav structure, since the build has
+moved past it in a few places.
 
 ## Commands
 
@@ -22,7 +22,7 @@ Windows venv, activated via `venv\Scripts\activate` (PowerShell/cmd) — all com
 the venv's Python (`venv\Scripts\python` / `venv/Scripts/python` if not activated).
 
 ```
-pip install -r requirements.txt     # Django, mysqlclient, python-dotenv
+pip install -r requirements.txt     # Django, mysqlclient, python-dotenv, google-auth, requests, reportlab
 python manage.py runserver          # dev server at http://127.0.0.1:8000/
 python manage.py makemigrations     # add [app_label] to scope to one app, e.g. `upload`
 python manage.py migrate
@@ -32,8 +32,10 @@ python manage.py check              # settings/model sanity check, no DB needed
 python manage.py test               # core/tests.py covers all 11 views; `test <app>.<TestCase>.<method>` to scope one
 ```
 
-`requirements.txt` pins `Django`, `mysqlclient`, and `python-dotenv`. No frontend build step;
-templates and `static/` are served directly.
+`requirements.txt` pins `Django`, `mysqlclient`, `python-dotenv`, `google-auth` + `requests` (Google
+OAuth — see **"Sign in with Google"** below), and `reportlab` (PDF export — see **Downloads: on-
+demand PDF export** below; pulls in `pillow` transitively, not pinned directly). No frontend build
+step; templates and `static/` are served directly.
 
 ## Architecture
 
@@ -281,9 +283,9 @@ generic person-icon SVG linking to `/login/`; a logged-in visitor sees their `av
 linking to `/account/` — deliberately still `/account/`, not `/profile/` (see below), even though
 both now exist; `/account/` remains the primary post-login landing spot. The side drawer's Logout
 button is a real `POST` form (Django 5's `LogoutView` requires POST); the drawer's own Profile item
-links to `/profile/`; Favourite, Reading List, and News are real, account-backed drawer items (see
-**Favourites and Reading List** and **News** above) — only Bookmarks and Downloads remain static
-placeholders, unconnected to any account data.
+links to `/profile/`; Favourite, Reading List, Downloads, and News are real, account-backed drawer
+items (see **Favourites and Reading List**, **Downloads: on-demand PDF export**, and **News**
+above/below) — only Bookmarks remains a static placeholder, unconnected to any account data.
 
 ### Profile (`/profile/`) vs. Account (`/account/`) — two different pages, on purpose
 
@@ -345,6 +347,52 @@ dedupe helper with it. Both follow the exact same shape end to end:
   previously dead `<button>` placeholders with real `<a href="{% url ... %}">` links — which is why
   the **What this is** intro above now calls out Favourite/Reading List as real rather than
   placeholder drawer items.
+
+### Downloads: on-demand PDF export
+
+A third `.hero-actions` icon (download-arrow, same SVG path as the drawer's Downloads icon)
+sits alongside Favourite and Reading List on `writings_detail.html`/`godvalley_detail.html`, but
+it isn't a toggle like the other two — it always performs the same action, so its button has no
+`is-active` state and its own `<form>` (`_download_button.html`) is plain, un-JS'd `POST` to
+`core.views.download_content`. That view does two things: builds a PDF on the fly via
+`core.pdf.build_content_pdf` (see below) and returns it as
+`HttpResponse(pdf_bytes, content_type='application/pdf')` with `Content-Disposition:
+attachment; filename="<slug>.pdf"`. No JS interception was needed the way `favourite.js`/
+`reading-list.js` prevent a full-page reload — a browser's response to a `Content-Disposition:
+attachment` response is to pop the native download prompt/toolbar *without* navigating away from
+the current page, so the plain form submit already behaves correctly with zero script.
+
+`core/pdf.py` (a new small single-purpose module, alongside `feeds.py`/`sitemaps.py`/
+`google_oauth.py` in the same "core owns one file per cross-cutting concern" pattern) uses
+`reportlab` — added to `requirements.txt` — chosen specifically because it's a pure-Python wheel
+with no system dependencies (unlike WeasyPrint, which needs GTK/Cairo/Pango installed separately
+and is painful on Windows, the dev platform this project targets). It builds the PDF with
+`reportlab.platypus.SimpleDocTemplate` + `Paragraph` flowables rather than manual `Canvas`
+coordinate placement, so long chapter bodies get automatic word-wrap and page-breaks for free.
+Body text is split into paragraphs the same way Django's `|linebreaks` filter would (blank-line-
+separated blocks, with single `\n`s inside a block becoming `<br/>`), and every paragraph is run
+through `xml.sax.saxutils.escape` before being handed to reportlab's `Paragraph` (which parses a
+small HTML-like subset of its own), since raw chapter text could otherwise contain `<`/`&`/etc.
+that would break reportlab's mini-parser. Dates are formatted via `django.utils.dateformat.format`
+(`'F j, Y'`), not `datetime.strftime('%-d')` — `%-d` is a glibc/macOS-only strftime extension and
+crashes on Windows (`%#d` is the Windows equivalent), so Django's own portable dateformat is used
+instead of picking one platform-specific strftime flag over the other.
+
+`upload.models.DownloadHistory` records what's been downloaded — one row per `(user, content)`,
+`downloaded_at` as `auto_now` (not `auto_now_add`) so re-downloading bumps a row back to the top
+instead of creating a duplicate, the exact same dedupe convention as `ReadingHistory` (chosen
+because the user's own wording for this feature was "download **history**", unlike
+Favourite/ReadingListItem's "saved item" framing above). The PDF itself is never written to disk
+or `MEDIA_ROOT` — there is no `MEDIA_ROOT` configured in this project at all — it's regenerated
+fresh from the `Content` row on every download, so `DownloadHistory` is purely a log, not a file
+store; a "download again" button on `/downloads/` (`core.views.downloads`, `login_required`)
+re-triggers `download_content` rather than serving a cached file. `/downloads/` deliberately
+doesn't reuse the `_archive_card.html` grid the way `/favourites/` and `/reading-list/` do —
+each row needs an independently-clickable re-download button next to the title link, which would
+mean nesting a `<form>`/`<button>` inside `_archive_card.html`'s wrapping `<a>` (illegal, the same
+problem `.stretched-link` solves for News) — so it instead reuses the `.reading-history-item` list-
+row component from `/profile/`, wrapped in a new `.download-row` flex container that places the
+re-download `<form>` as a sibling of the row's `<a>` rather than nested inside it.
 
 ### Design system: token-based, gold-on-ink
 
