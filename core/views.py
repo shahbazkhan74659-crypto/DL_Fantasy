@@ -26,6 +26,25 @@ WRITINGS_CATEGORIES = (
 
 PAGE_SIZE = 12
 
+# Static placeholder news — not model-backed yet; a real News model/admin can replace this
+# once there's enough content to justify one. Keyed by slug so each item still gets its own
+# detail URL (news_detail) rather than only living inline on the news list page.
+NEWS_ITEMS = {
+    'a-new-arc-begins-in-the-god-valley': {
+        'title': 'A New Arc Begins in The God Valley',
+        'date': 'July 2026',
+        'tag': 'Announcement',
+        'excerpt': "After months of quiet drafting, the next arc of The God Valley is underway.",
+        'body': (
+            "After months of quiet drafting, the next arc of The God Valley is underway — new "
+            "chapters are being added to the archive as they're finished, continuing the story "
+            "exactly where it left off.\n\n"
+            "No release schedule, no previews: chapters go up the moment they're ready, the same "
+            "way everything else on this site does."
+        ),
+    },
+}
+
 
 def _paginate(request, queryset):
     return Paginator(queryset, PAGE_SIZE).get_page(request.GET.get('page'))
@@ -129,6 +148,18 @@ def collections(request):
 
 def about(request):
     return render(request, 'about.html')
+
+
+def news(request):
+    items = [{'slug': slug, **data} for slug, data in NEWS_ITEMS.items()]
+    return render(request, 'news.html', {'items': items})
+
+
+def news_detail(request, slug):
+    item = NEWS_ITEMS.get(slug)
+    if item is None:
+        raise Http404
+    return render(request, 'news_detail.html', {'item': item})
 
 
 def _safe_next(request, next_url):

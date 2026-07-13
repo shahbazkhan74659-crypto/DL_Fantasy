@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}{{ item.title }} | DL Fantasy{% endblock %}
+{% block content %}
+
+<section class="hero hero-compact">
+    <div class="hero-content parallax">
+        <h1>{{ item.title }}</h1>
+        <p class="meta">{{ item.date }} · {{ item.tag }}</p>
+    </div>
+</section>
+
+<section class="archive">
+    <div class="chapter-content">
+        {{ item.body|linebreaks }}
+    </div>
+
+    <div class="chapter-nav">
+        <a class="btn-outline" href="{% url 'news' %}">&larr; Back to News</a>
+    </div>
+</section>
+
+{% endblock %}

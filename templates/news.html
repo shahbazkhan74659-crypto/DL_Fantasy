@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}News | DL Fantasy{% endblock %}
+{% block content %}
+
+<div class="archive-container">
+
+    <header class="archive-header archive-header-row">
+        <div>
+            <span class="section-tag">Dispatch</span>
+            <h1>News</h1>
+            <p>Updates from the archive, posted whenever there's something worth saying.</p>
+        </div>
+        {% if user.is_staff %}
+        <button type="button" class="btn news-new-btn">+ New</button>
+        {% endif %}
+    </header>
+
+    <div class="archive-grid">
+        {% for item in items %}
+        <a class="archive-card show" href="{% url 'news_detail' item.slug %}">
+            <p class="meta">{{ item.date }} · {{ item.tag }}</p>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.excerpt }}</p>
+        </a>
+        {% endfor %}
+    </div>
+
+</div>
+
+{% endblock %}

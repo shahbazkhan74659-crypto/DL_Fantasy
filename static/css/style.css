@@ -435,6 +435,17 @@ input:focus-visible,
     padding:0 var(--gutter);
 }
 
+/* Short text-only hero (e.g. news_detail) — the full 90vh splash treatment is meant for
+   the homepage and long-form chapter/entry pages; a one-paragraph page doesn't need it. */
+.hero-compact{
+    min-height:auto;
+    padding:var(--space-2xl) var(--gutter) var(--space-lg);
+}
+
+.hero-compact + .archive{
+    padding-top:var(--space-lg);
+}
+
 .hero-content{
     max-width:750px;
     opacity:0;
@@ -533,6 +544,8 @@ input:focus-visible,
 }
 
 .archive-card{
+    display:block;
+    text-decoration:none;
     border:1px solid var(--border-dark);
     border-radius:var(--radius-md);
     padding:var(--space-lg);
@@ -857,6 +870,19 @@ footer small{
 
 .archive-header{
     margin-bottom:50px;
+}
+
+.archive-header-row{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:var(--space-md);
+}
+
+.news-new-btn{
+    flex-shrink:0;
+    white-space:nowrap;
 }
 
 .archive-header h1{
