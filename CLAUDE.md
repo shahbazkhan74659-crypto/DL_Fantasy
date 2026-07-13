@@ -259,7 +259,7 @@ deliberately introduced. Trust the code over the doc on these points:
 replacing) the existing server-side Django `forms.Form`/`forms.ModelForm` validation in
 `core/forms.py` — Django remains the source of truth; the client-side layer is purely a fast-fail
 UX improvement. Delivery keeps the "no frontend build step" constraint from **Commands** above:
-Zod's ESM bundle is vendored at `static/js/vendor/zod.js` (fetched from jsdelivr's `+esm` build,
+Zod's ESM bundle is vendored at `static/vendor/zod.js` (fetched from jsdelivr's `+esm` build,
 external sourcemap comment stripped) rather than loaded from a CDN at runtime — consistent with how
 this project already self-hosts fonts instead of using a CDN. `static/js/auth-forms.js` is a
 `type="module"` script, loaded only on the two auth pages via `base.html`'s `{% block extra_js %}`

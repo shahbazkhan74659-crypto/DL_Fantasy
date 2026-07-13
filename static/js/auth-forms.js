@@ -5,7 +5,7 @@
 // Django, which re-validates everything server-side (the only place account
 // creation / auth actually happens) — see core/forms.py.
 
-import { z } from './vendor/zod.js';
+import { z } from '../vendor/zod.js';
 
 const SCHEMAS = {
     login: z.object({
