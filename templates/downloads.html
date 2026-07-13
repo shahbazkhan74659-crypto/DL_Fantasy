@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Downloads | DL Fantasy{% endblock %}
+{% block content %}
+
+<div class="archive-container">
+
+    <header class="archive-header">
+        <h1>Downloads</h1>
+        <p>Every chapter or piece you've saved as a PDF, most recent first.</p>
+    </header>
+
+    {% if download_history %}
+    <div class="reading-history-list">
+        {% for item in download_history %}
+        {% if item.content.category == 'godvalley' %}
+        {% url 'godvalley_detail' item.content.slug as history_url %}
+        {% else %}
+        {% url 'writings_detail' item.content.category item.content.slug as history_url %}
+        {% endif %}
+        <div class="download-row">
+            <a href="{{ history_url }}" class="reading-history-item">
+                <span class="reading-history-icon">{{ item.content.get_category_display|first }}</span>
+                <span class="reading-history-meta">
+                    <span class="reading-history-title">{{ item.content.title }}</span>
+                    <span class="reading-history-sub">{{ item.content.get_category_display }} &middot; downloaded {{ item.downloaded_at|timesince }} ago</span>
+                </span>
+            </a>
+            <form method="post" action="{% url 'download_content' item.content.id %}" class="download-form">
+                {% csrf_token %}
+                <button type="submit" class="icon-btn download-btn" aria-label="Download again">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11.5"></path><path d="M7.5 11l4.5 4.5L16.5 11"></path><path d="M4.5 19.5h15"></path></svg>
+                </button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    {% include '_pagination.html' with page_obj=download_history %}
+    {% else %}
+    <p class="reading-history-empty">No downloads yet — tap the download icon on any story or chapter to save it as a PDF.</p>
+    {% endif %}
+
+</div>
+
+{% endblock %}

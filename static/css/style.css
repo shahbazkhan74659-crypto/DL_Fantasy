@@ -1418,6 +1418,17 @@ footer small{
     padding:var(--space-lg) 0;
 }
 
+.download-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+}
+
+.download-row .reading-history-item{
+    flex:1;
+    min-width:0;
+}
+
 @media(max-width:700px){
     .profile-layout{
         flex-direction:column;

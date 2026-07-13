@@ -115,6 +115,31 @@ class ReadingListItem(models.Model):
         return f"{self.user} saved {self.content} to reading list"
 
 
+class DownloadHistory(models.Model):
+    """One row per (user, content) a visitor has downloaded as a PDF via the download button on a
+    detail page — recorded from core.views.download_content, deduped the same way ReadingHistory
+    is: `downloaded_at` is `auto_now` (not `auto_now_add`), so re-downloading something bumps it
+    back to the top of the "Downloads" page instead of piling up duplicate rows. The PDF itself is
+    generated on demand (via reportlab) and never stored — this table is just the history/log of
+    what was downloaded and when, not a file store.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='download_history',
+    )
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name='+')
+    downloaded_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-downloaded_at']
+        verbose_name_plural = 'download history'
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'content'], name='unique_user_content_download'),
+        ]
+
+    def __str__(self):
+        return f"{self.user} downloaded {self.content}"
+
+
 class News(models.Model):
     """Short dispatches/announcements — deliberately separate from Content, not another
     category on it: no chapters, no long-form body, just title/tag/body created via the

@@ -6,17 +6,18 @@ from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, DurationField, ExpressionWrapper, F, Sum
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from upload.models import Content, Favourite, News, ReadingHistory, ReadingListItem
+from upload.models import Content, DownloadHistory, Favourite, News, ReadingHistory, ReadingListItem
 from users.models import DeletedUser, User, VisitSession
 
 from . import google_oauth
 from .forms import NewsForm, ProfileForm, SignupForm, StyledAuthenticationForm, UserEditForm
+from .pdf import build_content_pdf
 
 WRITINGS_CATEGORIES = (
     Content.Category.FICTION,
@@ -169,6 +170,28 @@ def toggle_reading_list_item(request, content_id):
 def reading_list(request):
     items = ReadingListItem.objects.filter(user=request.user).select_related('content')
     return render(request, 'reading_list.html', {'reading_list_items': _paginate(request, items)})
+
+
+@login_required
+def download_content(request, content_id):
+    if request.method != 'POST':
+        raise Http404
+    content = get_object_or_404(Content, pk=content_id, is_published=True)
+
+    record, created = DownloadHistory.objects.get_or_create(user=request.user, content=content)
+    if not created:
+        record.save()  # bumps auto_now downloaded_at so re-downloads float back to the top
+
+    pdf_bytes = build_content_pdf(content)
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{content.slug}.pdf"'
+    return response
+
+
+@login_required
+def downloads(request):
+    items = DownloadHistory.objects.filter(user=request.user).select_related('content')
+    return render(request, 'downloads.html', {'download_history': _paginate(request, items)})
 
 
 def search(request):

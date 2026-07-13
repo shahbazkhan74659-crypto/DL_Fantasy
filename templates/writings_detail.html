@@ -5,6 +5,7 @@
     <div class="hero-actions">
         {% include '_favourite_button.html' with content=entry is_favourited=is_favourited %}
         {% include '_reading_list_button.html' with content=entry is_in_reading_list=is_in_reading_list %}
+        {% include '_download_button.html' with content=entry %}
     </div>
     <div class="hero-content parallax">
         <h1>{{ entry.title }}</h1>

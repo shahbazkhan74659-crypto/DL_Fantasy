@@ -9,10 +9,12 @@ and mythology writing, centered on a flagship story called "The God Valley". Con
 single-author (only Mr. Dex writes/publishes, via Django admin). **The original "no visitor
 accounts" idea is cancelled** — the site now supports and will keep supporting real user accounts:
 sign up, log in, log out, and a personal account page, with more account-driven features expected
-to build on this (see the drawer's Favourite/Bookmarks/Reading List/News placeholders). See
-**Visitor auth** below for how it's built. Full intent lives in `Project-Scope.md` — read it for the
-"why", but see **Divergences from Project-Scope.md** below before trusting it for the current
-page/nav structure, since the build has moved past it in a few places.
+to build on this. Favourite and Reading List are now real, account-backed features (see
+**Favourites and Reading List** below); Bookmarks and Downloads in the side drawer are still
+placeholders. See **Visitor auth** below for how visitor accounts are built. Full intent lives in
+`Project-Scope.md` — read it for the "why", but see **Divergences from Project-Scope.md** below
+before trusting it for the current page/nav structure, since the build has moved past it in a few
+places.
 
 ## Commands
 
@@ -97,6 +99,28 @@ additional JS wiring — only the page-specific *actions* (like News's edit-moda
 own small handler. The delete confirmation (`window.confirm()` on `[data-confirm]`) is handled
 generically inside `card-menu.js` too, not duplicated per feature.
 
+### Reusable "New" badge: `templates/_new_badge.html`
+
+A small pill (`.news-new-badge` — red dot + "New") originally inline in `news.html` to flag the
+single latest dispatch, pulled into its own partial so the same visual marker could be reused
+anywhere a list has an obvious "newest" item. Usage is always the same shape: `{% if
+<condition marking the newest item> %}{% include '_new_badge.html' %}{% endif %}` placed as the
+first child inside the card. It is currently wired into four lists, each gating on both
+"is this the newest-ordered item in the loop" and "am I on page 1 of the pagination" (so page 2+
+never re-badges its own first row):
+- `news.html` — `forloop.first` (News is always ordered `-created_at`, unpaginated).
+- `writings_list.html` — `forloop.first and entries.number == 1`, generic across all three Writings
+  categories (Fiction/Philosophy/Mythology), since each category's list is independently ordered
+  `-created_at`.
+- `godvalley_chapters.html` — `forloop.first and chapters.number == 1`, matching the list's
+  `-chapter_number` ordering described above.
+- `_archive_card.html` (used by `favourites.html`) — takes an optional `show_new_badge` include
+  param rather than baking the condition into the partial itself, since `_archive_card.html` is
+  reused by several pages (home, search, writings hub) that should never show the badge; only the
+  caller that wants it passes `show_new_badge=True` for its first-page/first-item card. `Favourite`
+  rows are ordered `-created_at`, so this marks the most recently favourited item, not the most
+  recently published one.
+
 ### Stretched-link: whole-card click target without nesting interactive elements
 
 `.stretched-link` (on the title `<a>`) expands via `::after{position:absolute;inset:0}` to cover
@@ -133,6 +157,10 @@ list+detail:
   linked from the navbar and from the Archive index.
 - `godvalley_chapters` (`/godvalley/chapters/`) — the actual chapter grid, with `?q=` title search
   (`Content.objects.filter(title__icontains=...)`). This is the only real search on the site.
+  Ordered `-chapter_number` (newest chapter first, Chapter 1 sinks to the bottom) — a deliberate
+  choice so readers land on the latest release first, matching how `writings_category_list` already
+  sorts by `-created_at`. This is independent of `godvalley_detail`'s prev/next nav, which still
+  queries by `chapter_number__lt`/`__gt` and is unaffected by list ordering.
 - `godvalley_detail` (`/godvalley/<slug>/`) — chapter body + prev/next, computed via two indexed
   `chapter_number__lt`/`__gt` queries with `.only(...)` (not a full-table scan; avoids loading every
   chapter's `body` just to find neighbors).
@@ -253,8 +281,9 @@ generic person-icon SVG linking to `/login/`; a logged-in visitor sees their `av
 linking to `/account/` — deliberately still `/account/`, not `/profile/` (see below), even though
 both now exist; `/account/` remains the primary post-login landing spot. The side drawer's Logout
 button is a real `POST` form (Django 5's `LogoutView` requires POST); the drawer's own Profile item
-links to `/profile/`; the remaining drawer items (Favourite, Bookmarks, Reading List, Downloads,
-News) are still static placeholders, unconnected to any account data.
+links to `/profile/`; Favourite, Reading List, and News are real, account-backed drawer items (see
+**Favourites and Reading List** and **News** above) — only Bookmarks and Downloads remain static
+placeholders, unconnected to any account data.
 
 ### Profile (`/profile/`) vs. Account (`/account/`) — two different pages, on purpose
 
@@ -282,6 +311,40 @@ bumps it back to the top of the list instead of leaving a stale timestamp. It's 
 for authenticated visitors only (anonymous reading isn't tracked — there's no account to attach it
 to). `/profile/` shows the 10 most recent; zero rows renders "No History Recorded." instead of an
 empty list.
+
+### Favourites and Reading List: user-curated save actions, not auto-tracking
+
+Both live in `upload/models.py` as near-identical models — `Favourite` and `ReadingListItem` —
+each one row per `(user, content)` with a real `UniqueConstraint`, deliberately distinct from
+`ReadingHistory` above: `ReadingHistory` is an automatic view log (recorded on every detail-page
+visit), while these two are explicit visitor actions (a click), so neither shares a table or a
+dedupe helper with it. Both follow the exact same shape end to end:
+
+- **Icon buttons** — `_favourite_button.html` (heart) and `_reading_list_button.html` (open-book,
+  the same SVG path as the drawer's Reading List icon) are both included from `writings_detail.html`
+  and `godvalley_detail.html`, wrapped together in one `.hero-actions` flex container (`position:
+  absolute; top/right: var(--gutter)`) at the top-right of the `.hero` section — `.hero` needed
+  `position:relative` added for this to anchor against. Each button is a real `<form method="post">`
+  (works with JS disabled) posting to a `toggle_*` view (`core.views.toggle_favourite` /
+  `toggle_reading_list_item`), both `login_required`, both `get_or_create`-then-delete-if-not-created
+  to toggle in one round trip, both gated to `is_published=True` content via `get_object_or_404`.
+- **No full-page reload on click** — `static/js/favourite.js` and `static/js/reading-list.js` are
+  near-duplicate site-wide delegated listeners (registered once in `base.html`, same pattern as
+  `card-menu.js`) that intercept the form's `submit`, `fetch()` it with an
+  `X-Requested-With: XMLHttpRequest` header, and toggle the button's `is-active` class/`aria-*`/SVG
+  fill from the JSON response instead of letting the browser navigate. The views detect that header
+  and branch: with it present, they return `JsonResponse({'is_favourited': ...})` /
+  `JsonResponse({'is_in_reading_list': ...})`; without it (JS disabled), they fall back to a normal
+  redirect using the form's hidden `next` field (`request.get_full_path` at render time) via the
+  existing `_safe_next` helper — so the feature degrades to plain-form-and-reload rather than
+  breaking outright.
+- **List pages** — `/favourites/` and `/reading-list/` (`core.views.favourites` /
+  `core.views.reading_list`, both `login_required`) render the user's saved items as
+  `_archive_card.html` grids via `_paginate`, ordered `-created_at` (most recently
+  favourited/saved first). Both are wired into the side drawer (`base.html`) — replacing what were
+  previously dead `<button>` placeholders with real `<a href="{% url ... %}">` links — which is why
+  the **What this is** intro above now calls out Favourite/Reading List as real rather than
+  placeholder drawer items.
 
 ### Design system: token-based, gold-on-ink
 

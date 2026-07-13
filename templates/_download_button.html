@@ -1,0 +1,22 @@
+{% comment %}
+Download-as-PDF button. Include on any detail page with:
+
+    {% include '_download_button.html' with content=entry %}
+
+`content` is a upload.models.Content instance. Posts to core.views.download_content, which
+streams a generated PDF back as the response (Content-Disposition: attachment) — the browser's
+download prompt fires without navigating away from the current page, so no `next`/redirect
+handling is needed here the way the favourite/reading-list toggles need it.
+{% endcomment %}
+{% if user.is_authenticated %}
+<form method="post" action="{% url 'download_content' content.id %}" class="download-form">
+    {% csrf_token %}
+    <button type="submit" class="icon-btn download-btn" aria-label="Download as PDF">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11.5"></path><path d="M7.5 11l4.5 4.5L16.5 11"></path><path d="M4.5 19.5h15"></path></svg>
+    </button>
+</form>
+{% else %}
+<a href="{% url 'login' %}?next={{ request.path|urlencode }}" class="icon-btn download-btn" aria-label="Log in to download as PDF">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11.5"></path><path d="M7.5 11l4.5 4.5L16.5 11"></path><path d="M4.5 19.5h15"></path></svg>
+</a>
+{% endif %}
