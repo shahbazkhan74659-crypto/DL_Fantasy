@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm, SetPasswordForm, UserCreationForm
 
+from upload.models import News
 from users.models import User
 
 FIELD_ATTRS = {'class': 'auth-field', 'autocomplete': 'off'}
@@ -66,3 +67,11 @@ class UserEditForm(forms.ModelForm):
         if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
             raise forms.ValidationError('Another account already uses this email.')
         return email
+
+
+class NewsForm(forms.ModelForm):
+    """Backs the 'New' modal on the admin-only News page. Only title/tag/body are user-supplied —
+    the slug is generated in News.save() and created_at is auto_now_add, so there's no date input."""
+    class Meta:
+        model = News
+        fields = ('title', 'tag', 'body')

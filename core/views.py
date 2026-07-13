@@ -12,11 +12,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from upload.models import Content
+from upload.models import Content, News
 from users.models import DeletedUser, User, VisitSession
 
 from . import google_oauth
-from .forms import SignupForm, StyledAuthenticationForm, UserEditForm
+from .forms import NewsForm, SignupForm, StyledAuthenticationForm, UserEditForm
 
 WRITINGS_CATEGORIES = (
     Content.Category.FICTION,
@@ -25,25 +25,6 @@ WRITINGS_CATEGORIES = (
 )
 
 PAGE_SIZE = 12
-
-# Static placeholder news — not model-backed yet; a real News model/admin can replace this
-# once there's enough content to justify one. Keyed by slug so each item still gets its own
-# detail URL (news_detail) rather than only living inline on the news list page.
-NEWS_ITEMS = {
-    'a-new-arc-begins-in-the-god-valley': {
-        'title': 'A New Arc Begins in The God Valley',
-        'date': 'July 2026',
-        'tag': 'Announcement',
-        'excerpt': "After months of quiet drafting, the next arc of The God Valley is underway.",
-        'body': (
-            "After months of quiet drafting, the next arc of The God Valley is underway — new "
-            "chapters are being added to the archive as they're finished, continuing the story "
-            "exactly where it left off.\n\n"
-            "No release schedule, no previews: chapters go up the moment they're ready, the same "
-            "way everything else on this site does."
-        ),
-    },
-}
 
 
 def _paginate(request, queryset):
@@ -151,15 +132,72 @@ def about(request):
 
 
 def news(request):
-    items = [{'slug': slug, **data} for slug, data in NEWS_ITEMS.items()]
+    items = News.objects.all()
+    if request.user.is_staff:
+        for item in items:
+            item.menu_actions = [
+                {
+                    'type': 'edit-modal',
+                    'label': 'Edit',
+                    'url': reverse('edit_news', args=[item.slug]),
+                    'trigger_class': 'news-edit-btn',
+                    'data': {'title': item.title, 'tag': item.tag, 'body': item.body},
+                },
+                {
+                    'type': 'delete',
+                    'label': 'Delete',
+                    'url': reverse('delete_news', args=[item.slug]),
+                    'confirm': f'Delete "{item.title}"? This can\'t be undone.',
+                },
+            ]
     return render(request, 'news.html', {'items': items})
 
 
 def news_detail(request, slug):
-    item = NEWS_ITEMS.get(slug)
-    if item is None:
-        raise Http404
+    item = get_object_or_404(News, slug=slug)
     return render(request, 'news_detail.html', {'item': item})
+
+
+@login_required
+def create_news(request):
+    if not request.user.is_staff:
+        raise Http404
+    if request.method == 'POST':
+        form = NewsForm(request.POST)
+        if form.is_valid():
+            item = form.save()
+            messages.success(request, f'"{item.title}" was published.')
+            return redirect('news')
+        errors = '; '.join(f"{field}: {', '.join(errs)}" for field, errs in form.errors.items())
+        messages.error(request, f"Could not publish — {errors}")
+    return redirect('news')
+
+
+@login_required
+def edit_news(request, slug):
+    if not request.user.is_staff:
+        raise Http404
+    item = get_object_or_404(News, slug=slug)
+    if request.method == 'POST':
+        form = NewsForm(request.POST, instance=item)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'"{item.title}" was updated.')
+        else:
+            errors = '; '.join(f"{field}: {', '.join(errs)}" for field, errs in form.errors.items())
+            messages.error(request, f"Could not update {item.title} — {errors}")
+    return redirect('news')
+
+
+@login_required
+def delete_news(request, slug):
+    if not request.user.is_staff or request.method != 'POST':
+        raise Http404
+    item = get_object_or_404(News, slug=slug)
+    title = item.title
+    item.delete()
+    messages.success(request, f'"{title}" was deleted.')
+    return redirect('news')
 
 
 def _safe_next(request, next_url):

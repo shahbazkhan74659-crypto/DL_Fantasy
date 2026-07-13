@@ -435,6 +435,12 @@ input:focus-visible,
     padding:0 var(--gutter);
 }
 
+/* On the homepage, the search bar above the hero already fills part of the viewport, so the
+   full 90vh treatment leaves a big dead gap before the heading — give it less room to center in. */
+.home-search + .hero{
+    min-height:55vh;
+}
+
 /* Short text-only hero (e.g. news_detail) — the full 90vh splash treatment is meant for
    the homepage and long-form chapter/entry pages; a one-paragraph page doesn't need it. */
 .hero-compact{
@@ -883,6 +889,22 @@ footer small{
 .news-new-btn{
     flex-shrink:0;
     white-space:nowrap;
+}
+
+.news-new-badge{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    padding:4px 10px;
+    margin-bottom:12px;
+    border-radius:999px;
+    background:var(--danger);
+    color:#fff;
+    font-family:'Inter', sans-serif;
+    font-size:0.7rem;
+    font-weight:700;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
 }
 
 .archive-header h1{
@@ -1579,4 +1601,111 @@ footer small{
     width:16px;
     height:16px;
     accent-color:var(--gold);
+}
+
+/* CARD MENU — reusable three-dot dropdown (templates/_card_menu.html, static/js/card-menu.js) */
+
+.card-menu-wrap{
+    position:absolute;
+    top:var(--space-sm);
+    right:var(--space-sm);
+    z-index:2;
+}
+
+.card-menu{
+    position:relative;
+}
+
+.card-menu-toggle{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:30px;
+    height:30px;
+    background:none;
+    border:1px solid transparent;
+    border-radius:var(--radius-sm);
+    color:var(--text-muted);
+    cursor:pointer;
+    transition:color 0.2s var(--ease), border-color 0.2s var(--ease), background 0.2s var(--ease);
+}
+
+.card-menu-toggle:hover,
+.card-menu.is-open .card-menu-toggle{
+    color:var(--gold);
+    border-color:var(--border-dark);
+    background:var(--bg-raised);
+}
+
+.card-menu-dropdown{
+    position:absolute;
+    top:calc(100% + 6px);
+    right:0;
+    min-width:150px;
+    background:var(--bg-secondary);
+    border:1px solid var(--border-dark);
+    border-radius:var(--radius-sm);
+    box-shadow:var(--shadow-card);
+    padding:6px;
+    opacity:0;
+    transform:translateY(-6px);
+    pointer-events:none;
+    transition:opacity 0.2s var(--ease), transform 0.2s var(--ease);
+    z-index:10;
+}
+
+.card-menu.is-open .card-menu-dropdown{
+    opacity:1;
+    transform:translateY(0);
+    pointer-events:auto;
+}
+
+.card-menu-form{
+    margin:0;
+}
+
+.card-menu-item{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    padding:8px 10px;
+    background:none;
+    border:none;
+    border-radius:var(--radius-sm);
+    color:var(--text-secondary);
+    font-family:'Inter', sans-serif;
+    font-size:0.85rem;
+    text-align:left;
+    text-decoration:none;
+    cursor:pointer;
+    transition:background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.card-menu-item:hover{
+    background:var(--bg-raised);
+    color:var(--gold);
+}
+
+.card-menu-item-danger:hover{
+    color:var(--danger);
+}
+
+.card-menu-item svg{
+    flex-shrink:0;
+}
+
+/* Stretched-link — lets a whole .archive-card be clickable via one inner <a>, while a
+   .card-menu-wrap (z-index above the stretched overlay) stays independently clickable on top. */
+
+.stretched-link{
+    color:inherit;
+    text-decoration:none;
+}
+
+.stretched-link::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:1;
 }

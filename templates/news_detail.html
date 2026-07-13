@@ -5,7 +5,7 @@
 <section class="hero hero-compact">
     <div class="hero-content parallax">
         <h1>{{ item.title }}</h1>
-        <p class="meta">{{ item.date }} · {{ item.tag }}</p>
+        <p class="meta">{{ item.created_at|date:"F Y" }} · {{ item.get_tag_display }}</p>
     </div>
 </section>
 

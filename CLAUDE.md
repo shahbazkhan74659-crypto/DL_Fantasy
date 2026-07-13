@@ -43,15 +43,71 @@ Three apps, one Django project (`dlfantasy/`):
   don't revert to `django.contrib.auth.User`). The app also owns two auth-adjacent models,
   `LoginHistory` and `VisitSession`, plus `signals.py` / `middleware.py` / `utils.py` /
   `context_processors.py` supporting visitor auth.
-- **`upload`** — owns the single `Content` model, a central table for *all* long-form content:
-  Fiction, Philosophy, Mythology, and God Valley chapters, distinguished by a `category`
-  `TextChoices` field. God Valley intentionally lives in this shared table for now; Project-Scope.md
-  calls for splitting it into its own dedicated model later once volume justifies it. Key fields:
-  `chapter_number` (nullable — only meaningful for `category=godvalley`, drives chapter ordering
-  and prev/next nav) and a `UniqueConstraint` on `(category, slug)` rather than a global-unique slug,
-  since the same slug could otherwise collide across categories.
+- **`upload`** — owns the `Content` model, a central table for *all* long-form content: Fiction,
+  Philosophy, Mythology, and God Valley chapters, distinguished by a `category` `TextChoices` field.
+  God Valley intentionally lives in this shared table for now; Project-Scope.md calls for splitting
+  it into its own dedicated model later once volume justifies it. Key fields: `chapter_number`
+  (nullable — only meaningful for `category=godvalley`, drives chapter ordering and prev/next nav)
+  and a `UniqueConstraint` on `(category, slug)` rather than a global-unique slug, since the same
+  slug could otherwise collide across categories. `upload` also owns a separate, deliberately
+  distinct `News` model (short dispatches — no chapters, no `category`, just
+  `title`/`tag`/`body`/`created_at`) — see **News** below.
 - **`core`** — all views and URLs; holds no models. `core/urls.py` is included from the project
   root `dlfantasy/urls.py` at `''`.
+
+### News: `upload.News`, created/edited via a modal, not Django admin
+
+The News page (`/news/`) is real content management, not another static page — an admin can add a
+new dispatch through a "+ New" button (visible only when `user.is_staff`) that pops open a modal
+(`templates/news.html`, `static/js/news.js`) asking for **Title**, **Content**, and a **Tag**
+(exactly three choices: `Announcement` / `News` / `Update` — `upload.models.News.Tag`). The date is
+never user-entered: `created_at` is `auto_now_add`. Submitting POSTs to `core.views.create_news`
+(`core/forms.py`'s `NewsForm`), which — like `edit_user`/`delete_user` on the Users page — is gated
+by `if not request.user.is_staff: raise Http404` regardless of whether the button is visible,
+so hitting the URL directly as a non-admin 404s rather than 403s (matches the rest of the
+admin-only surface on this site). `News.slug` is generated server-side in `News.save()`, not via
+Django admin's `prepopulated_fields` JS helper — the modal isn't Django admin, so nothing else
+would fill it in. `News` *is* also registered in Django admin (`upload/admin.py`) for direct
+editing/deletion, same as `Content`. `news_detail.html` reuses the `.hero`/`.archive`/
+`.chapter-content` pattern from `writings_detail.html`, but with a `hero-compact` modifier class
+(and a `.hero-compact + .archive` CSS override) since the full 90vh splash hero looks wrong on a
+short dispatch instead of a long chapter.
+
+Each News card also carries a three-dot menu (Edit/Delete, `user.is_staff`-only) built from the
+**reusable card menu module** below — Edit reopens the same modal as "+ New" (pre-filled via the
+button's `data-*` attributes, form `action` swapped to `core.views.edit_news`), and Delete is a
+real `<form method="post">` to `core.views.delete_news` with a JS `confirm()` guard. Both views
+follow the same `is_staff` + `Http404` gate as `create_news`. Since each card's whole body is
+clickable (see **stretched-link** below), the card itself is no longer an `<a>` — the title is now
+`<h3><a class="stretched-link">`, letting the three-dot menu sit as an independently-clickable
+sibling instead of an invalid nested interactive element inside an anchor.
+
+### Reusable card menu: `templates/_card_menu.html` + `static/js/card-menu.js`
+
+A three-dot dropdown menu, built once and meant to be dropped onto *any* card, not just News.
+Usage: `{% include '_card_menu.html' with actions=item.menu_actions %}`, where `menu_actions` is a
+list of dicts built server-side (see `core.views.news`) shaped as one of:
+`{'type': 'link', 'label', 'url'}`, `{'type': 'edit-modal', 'label', 'url', 'trigger_class',
+'data': {...}}` (data becomes `data-*` attrs for a page's own JS to read on click — genuinely
+generic, not News-specific), or `{'type': 'delete', 'label', 'url', 'confirm'}`. The open/close/
+outside-click/Escape behavior lives in `card-menu.js` as a single **delegated** listener on
+`document` (registered once, site-wide, via `base.html` — not per-page `extra_js`), so it already
+works for any future `.card-menu` a page adds, including ones rendered after page load, with zero
+additional JS wiring — only the page-specific *actions* (like News's edit-modal trigger) need their
+own small handler. The delete confirmation (`window.confirm()` on `[data-confirm]`) is handled
+generically inside `card-menu.js` too, not duplicated per feature.
+
+### Stretched-link: whole-card click target without nesting interactive elements
+
+`.stretched-link` (on the title `<a>`) expands via `::after{position:absolute;inset:0}` to cover
+its nearest positioned ancestor (the `.archive-card`, already `position:relative`), making the
+entire card clickable through one small visible link — this is what lets a card carry both a
+full-card click-through *and* an independently-clickable `.card-menu` on top of it (`z-index:2` vs.
+the stretched overlay's `z-index:1`) without illegally nesting a `<button>`/`<form>` inside an
+`<a>`. `.stretched-link` itself resets `color:inherit;text-decoration:none` — without that, the
+inner `<a>` shows the browser's default blue/underlined link style instead of inheriting
+`.archive-card h3`'s gold color, since the anchor is now nested inside the heading rather than
+wrapping it.
 
 All templates live in one top-level `templates/` directory (`TEMPLATES.DIRS`), not per-app —
 none of the three apps use Django's app-level `templates/<app>/` convention.

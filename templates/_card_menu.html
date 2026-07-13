@@ -1,0 +1,52 @@
+{% comment %}
+Reusable three-dot card menu. Include on any card with:
+
+    {% include '_card_menu.html' with actions=item.menu_actions %}
+
+`actions` is a list of dicts, each shaped as one of:
+    {'type': 'link', 'label': 'View', 'url': url}
+    {'type': 'edit-modal', 'label': 'Edit', 'url': url, 'trigger_class': 'js-hook-class',
+     'data': {'title': item.title, ...}}   # rendered as data-* attrs for JS to read on click
+    {'type': 'delete', 'label': 'Delete', 'url': url, 'confirm': 'Delete X? This can't be undone.'}
+
+The toggle/dropdown chrome (open/close/outside-click/Escape) is handled globally by
+static/js/card-menu.js via event delegation on .card-menu, so nothing here needs page-specific JS —
+new pages just need this include plus their own handler for whichever trigger_class they use.
+{% endcomment %}
+<div class="card-menu">
+    <button type="button" class="card-menu-toggle" aria-label="Open menu" aria-haspopup="true" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+            <circle cx="12" cy="5" r="1.8"></circle>
+            <circle cx="12" cy="12" r="1.8"></circle>
+            <circle cx="12" cy="19" r="1.8"></circle>
+        </svg>
+    </button>
+    <div class="card-menu-dropdown" role="menu">
+        {% for action in actions %}
+        {% if action.type == 'delete' %}
+        <form method="post" action="{{ action.url }}" class="card-menu-form">
+            {% csrf_token %}
+            <button type="submit" class="card-menu-item card-menu-item-danger" role="menuitem" data-confirm="{{ action.confirm }}">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14"></path><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path><path d="M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                {{ action.label }}
+            </button>
+        </form>
+        {% elif action.type == 'edit-modal' %}
+        <button
+            type="button"
+            class="card-menu-item {{ action.trigger_class }}"
+            role="menuitem"
+            data-edit-url="{{ action.url }}"
+            {% for key, value in action.data.items %}data-{{ key }}="{{ value }}" {% endfor %}
+        >
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-2.83l-1.17-1.17a2 2 0 0 0-2.83 0L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>
+            {{ action.label }}
+        </button>
+        {% else %}
+        <a href="{{ action.url }}" class="card-menu-item" role="menuitem">
+            {{ action.label }}
+        </a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>

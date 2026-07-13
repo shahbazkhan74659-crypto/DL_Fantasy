@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}News | DL Fantasy{% endblock %}
 {% block content %}
 
@@ -11,20 +12,76 @@
             <p>Updates from the archive, posted whenever there's something worth saying.</p>
         </div>
         {% if user.is_staff %}
-        <button type="button" class="btn news-new-btn">+ New</button>
+        <button type="button" class="btn news-new-btn" id="new-news-btn" data-create-url="{% url 'create_news' %}">+ New</button>
         {% endif %}
     </header>
 
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <div class="archive-grid">
         {% for item in items %}
-        <a class="archive-card show" href="{% url 'news_detail' item.slug %}">
-            <p class="meta">{{ item.date }} · {{ item.tag }}</p>
-            <h3>{{ item.title }}</h3>
-            <p>{{ item.excerpt }}</p>
-        </a>
+        <article class="archive-card show">
+            {% if forloop.first %}
+            <span class="news-new-badge">
+                <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><circle cx="12" cy="12" r="6"></circle></svg>
+                New
+            </span>
+            {% endif %}
+            {% if user.is_staff %}
+            <div class="card-menu-wrap">
+                {% include '_card_menu.html' with actions=item.menu_actions %}
+            </div>
+            {% endif %}
+            <p class="meta">{{ item.created_at|date:"F Y" }} · {{ item.get_tag_display }}</p>
+            <h3><a href="{% url 'news_detail' item.slug %}" class="stretched-link">{{ item.title }}</a></h3>
+            <p>{{ item.body|truncatewords:20 }}</p>
+        </article>
         {% endfor %}
     </div>
 
 </div>
 
+{% if user.is_staff %}
+<div class="modal-overlay" id="news-modal-overlay"></div>
+<div class="modal" id="news-modal" role="dialog" aria-modal="true" aria-labelledby="news-modal-title" aria-hidden="true">
+    <div class="modal-header">
+        <h2 id="news-modal-title">New Dispatch</h2>
+        <button type="button" class="drawer-close" id="news-modal-close" aria-label="Close">&times;</button>
+    </div>
+    <form method="post" action="" id="news-form" class="auth-form">
+        {% csrf_token %}
+        <div class="auth-field-group">
+            <label for="news-title">Title</label>
+            <input type="text" name="title" id="news-title" class="auth-field" required maxlength="200">
+        </div>
+        <div class="auth-field-group">
+            <label for="news-tag">Tag</label>
+            <select name="tag" id="news-tag" class="auth-field">
+                <option value="announcement">Announcement</option>
+                <option value="news">News</option>
+                <option value="update">Update</option>
+            </select>
+        </div>
+        <div class="auth-field-group">
+            <label for="news-body">Content</label>
+            <textarea name="body" id="news-body" class="auth-field" rows="6" required></textarea>
+        </div>
+        <p class="chart-caption">Date is filled in automatically when you publish.</p>
+        <div class="modal-actions">
+            <button type="button" class="btn-outline" id="news-modal-cancel">Cancel</button>
+            <button type="submit" class="btn" id="news-submit-btn">Publish</button>
+        </div>
+    </form>
+</div>
+{% endif %}
+
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/news.js' %}"></script>
 {% endblock %}
