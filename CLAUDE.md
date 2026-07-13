@@ -250,10 +250,38 @@ Cloud project, not from inside this codebase.
 
 The navbar's profile-circle button (`base.html`) is conditional: an anonymous visitor sees a
 generic person-icon SVG linking to `/login/`; a logged-in visitor sees their `avatar_url` image
-linking to `/account/` (not a future "Profile" page — that's a separate, not-yet-built page). The side
-drawer's Logout button is a real `POST` form (Django 5's `LogoutView` requires POST); the other
-drawer items (Favourite, Bookmarks, Reading List, Downloads, News) are still static placeholders,
-unconnected to any account data.
+linking to `/account/` — deliberately still `/account/`, not `/profile/` (see below), even though
+both now exist; `/account/` remains the primary post-login landing spot. The side drawer's Logout
+button is a real `POST` form (Django 5's `LogoutView` requires POST); the drawer's own Profile item
+links to `/profile/`; the remaining drawer items (Favourite, Bookmarks, Reading List, Downloads,
+News) are still static placeholders, unconnected to any account data.
+
+### Profile (`/profile/`) vs. Account (`/account/`) — two different pages, on purpose
+
+`/account/` (`core.views.account`) is the stats dashboard: visit count/time-on-site, the 30-day
+bar chart, a link to change password. `/profile/` (`core.views.profile`, `templates/profile.html`)
+is the identity page, built to a specific two-column brief: a fixed-width left column (avatar,
+username, email, an Admin/User `.user-badge` — reusing the same badge classes as the `/users/`
+table — and an "Edit Profile" button) separated by a `.profile-divider` from a right column headed
+"Reading History". Each page links to the other (`.account-actions` on `/account/`, and `/profile/`
+has no stats of its own) so neither is a dead end.
+
+"Edit Profile" opens a modal (`static/js/profile.js`) wrapping the same `ProfileForm` used before —
+deliberately narrower than `UserEditForm` (the admin-facing one on `/users/`): no `is_active`
+field, since deactivating your own account through a plain form isn't a lever a self-service page
+should expose. Unlike the JS-driven modals elsewhere (Users, News), this one doesn't need JS to
+open on a failed submit: `profile.html` renders the modal with `is-open` server-side
+(`{% if form.errors %}`) so validation errors are never hidden behind a closed modal on page
+reload — the *closing* is JS, but the *first open on error* isn't.
+
+Reading History is powered by `upload.models.ReadingHistory` — one row per `(user, content)`,
+deduped the same way `VisitSession`/`google_sub` linking are (a real unique constraint, not an
+app-level check), with `viewed_at` as `auto_now` (not `auto_now_add`) so re-reading something
+bumps it back to the top of the list instead of leaving a stale timestamp. It's recorded from
+`core.views._record_reading_history`, called from both `writings_detail` and `godvalley_detail`
+for authenticated visitors only (anonymous reading isn't tracked — there's no account to attach it
+to). `/profile/` shows the 10 most recent; zero rows renders "No History Recorded." instead of an
+empty list.
 
 ### Design system: token-based, gold-on-ink
 

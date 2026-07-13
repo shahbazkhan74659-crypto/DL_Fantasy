@@ -75,3 +75,24 @@ class NewsForm(forms.ModelForm):
     class Meta:
         model = News
         fields = ('title', 'tag', 'body')
+
+
+class ProfileForm(forms.ModelForm):
+    """Self-service version of UserEditForm on the /profile/ page — a visitor editing their own
+    username/email. No is_active field here (unlike UserEditForm): that's an admin-only lever,
+    not something an account should be able to flip on itself.
+    """
+    class Meta:
+        model = User
+        fields = ('username', 'email')
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.update(FIELD_ATTRS)
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('Another account already uses this email.')
+        return email

@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Profile | DL Fantasy{% endblock %}
+{% block content %}
+
+<div class="archive-container">
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="profile-layout">
+
+        <div class="profile-left">
+            <div class="profile-identity">
+                {% if avatar_url %}
+                <img src="{{ avatar_url }}" alt="" class="profile-avatar-lg">
+                {% else %}
+                <div class="profile-avatar-lg profile-avatar-placeholder">
+                    <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.2" r="3.4"></circle><path d="M5 19.2c1.5-3.6 4.2-5.4 7-5.4s5.5 1.8 7 5.4"></path></svg>
+                </div>
+                {% endif %}
+                <div class="profile-identity-text">
+                    <h1>{{ user.username }}</h1>
+                    <p class="meta">{{ user.email }}</p>
+                </div>
+            </div>
+            {% if user.is_staff %}
+            <span class="user-badge user-badge-admin">Admin</span>
+            {% else %}
+            <span class="user-badge">User</span>
+            {% endif %}
+            <button type="button" class="btn-outline profile-edit-btn" id="edit-profile-btn">Edit Profile</button>
+        </div>
+
+        <div class="profile-divider"></div>
+
+        <div class="profile-right">
+            <h2>Reading History</h2>
+            {% if reading_history %}
+            <div class="reading-history-list">
+                {% for item in reading_history %}
+                {% if item.content.category == 'godvalley' %}
+                {% url 'godvalley_detail' item.content.slug as history_url %}
+                {% else %}
+                {% url 'writings_detail' item.content.category item.content.slug as history_url %}
+                {% endif %}
+                <a href="{{ history_url }}" class="reading-history-item">
+                    <span class="reading-history-icon">{{ item.content.get_category_display|first }}</span>
+                    <span class="reading-history-meta">
+                        <span class="reading-history-title">{{ item.content.title }}</span>
+                        <span class="reading-history-sub">{{ item.content.get_category_display }} &middot; {{ item.viewed_at|timesince }} ago</span>
+                    </span>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="reading-history-empty">No History Recorded.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+</div>
+
+<div class="modal-overlay {% if form.errors %}is-open{% endif %}" id="edit-profile-overlay"></div>
+<div class="modal {% if form.errors %}is-open{% endif %}" id="edit-profile-modal" role="dialog" aria-modal="true" aria-labelledby="edit-profile-title" aria-hidden="{% if form.errors %}false{% else %}true{% endif %}">
+    <div class="modal-header">
+        <h2 id="edit-profile-title">Edit Profile</h2>
+        <button type="button" class="drawer-close" id="edit-profile-close" aria-label="Close">&times;</button>
+    </div>
+    <form method="post" class="auth-form">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <p class="form-error">{{ form.non_field_errors|join:", " }}</p>
+        {% endif %}
+
+        <div class="auth-field-group">
+            <label for="{{ form.username.id_for_label }}">Username</label>
+            {{ form.username }}
+            {% if form.username.errors %}<p class="form-error">{{ form.username.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div class="auth-field-group">
+            <label for="{{ form.email.id_for_label }}">Email</label>
+            {{ form.email }}
+            {% if form.email.errors %}<p class="form-error">{{ form.email.errors|join:", " }}</p>{% endif %}
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn-outline" id="edit-profile-cancel">Cancel</button>
+            <button type="submit" class="btn">Save Changes</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/profile.js' %}"></script>
+{% endblock %}

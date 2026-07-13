@@ -12,11 +12,11 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from upload.models import Content, News
+from upload.models import Content, News, ReadingHistory
 from users.models import DeletedUser, User, VisitSession
 
 from . import google_oauth
-from .forms import NewsForm, SignupForm, StyledAuthenticationForm, UserEditForm
+from .forms import NewsForm, ProfileForm, SignupForm, StyledAuthenticationForm, UserEditForm
 
 WRITINGS_CATEGORIES = (
     Content.Category.FICTION,
@@ -58,10 +58,19 @@ def writings_category_list(request, category):
     })
 
 
+def _record_reading_history(request, content):
+    if not request.user.is_authenticated:
+        return
+    history, created = ReadingHistory.objects.get_or_create(user=request.user, content=content)
+    if not created:
+        history.save()  # bumps auto_now viewed_at so re-reads float back to the top
+
+
 def writings_detail(request, category, slug):
     if category not in WRITINGS_CATEGORIES:
         raise Http404("Unknown writings category")
     entry = get_object_or_404(Content, category=category, slug=slug, is_published=True)
+    _record_reading_history(request, entry)
     return render(request, 'writings_detail.html', {'entry': entry})
 
 
@@ -94,6 +103,8 @@ def godvalley_detail(request, slug):
         base_qs.filter(chapter_number__gt=chapter.chapter_number)
         .order_by('chapter_number').only('slug', 'chapter_number', 'title').first()
     )
+
+    _record_reading_history(request, chapter)
 
     return render(request, 'godvalley_detail.html', {
         'chapter': chapter,
@@ -334,6 +345,24 @@ def account(request):
         'total_minutes_30d': total_minutes_30d % 60,
         'max_count': max_count,
     })
+
+
+@login_required
+def profile(request):
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your profile was updated.')
+            return redirect('profile')
+    else:
+        form = ProfileForm(instance=request.user)
+
+    reading_history = (
+        ReadingHistory.objects.filter(user=request.user).select_related('content')[:10]
+    )
+
+    return render(request, 'profile.html', {'form': form, 'reading_history': reading_history})
 
 
 @login_required

@@ -48,6 +48,29 @@ class Content(models.Model):
         return self.title
 
 
+class ReadingHistory(models.Model):
+    """One row per (user, content) a visitor has opened — deduped so re-reading something just
+    bumps `viewed_at` (auto_now, not auto_now_add) rather than piling up duplicate rows. Recorded
+    from core.views.writings_detail / godvalley_detail for authenticated users only, and surfaced
+    as the "Reading History" panel on /profile/.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reading_history',
+    )
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name='+')
+    viewed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-viewed_at']
+        verbose_name_plural = 'reading history'
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'content'], name='unique_user_content_view'),
+        ]
+
+    def __str__(self):
+        return f"{self.user} read {self.content}"
+
+
 class News(models.Model):
     """Short dispatches/announcements — deliberately separate from Content, not another
     category on it: no chapters, no long-form body, just title/tag/body created via the

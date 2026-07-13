@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Content, News
+from .models import Content, News, ReadingHistory
 
 
 @admin.register(Content)
@@ -19,3 +19,11 @@ class NewsAdmin(admin.ModelAdmin):
     search_fields = ('title', 'body')
     prepopulated_fields = {'slug': ('title',)}
     ordering = ('-created_at',)
+
+
+@admin.register(ReadingHistory)
+class ReadingHistoryAdmin(admin.ModelAdmin):
+    list_display = ('user', 'content', 'viewed_at')
+    list_filter = ('user',)
+    ordering = ('-viewed_at',)
+    readonly_fields = ('user', 'content', 'viewed_at')
