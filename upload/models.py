@@ -71,6 +71,27 @@ class ReadingHistory(models.Model):
         return f"{self.user} read {self.content}"
 
 
+class Favourite(models.Model):
+    """One row per (user, content) a visitor has hearted on a detail page — toggled from
+    core.views.toggle_favourite, deduped the same way ReadingHistory is (a real unique
+    constraint), and surfaced as the "Favourites" page linked from the side drawer.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='favourites',
+    )
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'content'], name='unique_user_content_favourite'),
+        ]
+
+    def __str__(self):
+        return f"{self.user} favourited {self.content}"
+
+
 class News(models.Model):
     """Short dispatches/announcements — deliberately separate from Content, not another
     category on it: no chapters, no long-form body, just title/tag/body created via the

@@ -1,4 +1,5 @@
 <a class="archive-card concept-card show" href="{{ url }}">
+    {% if show_new_badge %}{% include '_new_badge.html' %}{% endif %}
     <h3>{{ title_text }}</h3>
     {% if meta_text %}<p class="meta">{{ meta_text }}</p>{% endif %}
     <p>{{ body_text }}</p>

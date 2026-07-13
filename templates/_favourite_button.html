@@ -1,0 +1,27 @@
+{% comment %}
+Heart toggle button. Include on any detail page with:
+
+    {% include '_favourite_button.html' with content=entry is_favourited=is_favourited %}
+
+`content` is a upload.models.Content instance; `is_favourited` is a bool the view computed via
+core.views._is_favourited. Posts to core.views.toggle_favourite, which redirects back to
+whatever page it was clicked from (the `next` field below).
+{% endcomment %}
+{% if user.is_authenticated %}
+<form method="post" action="{% url 'toggle_favourite' content.id %}" class="favourite-form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button
+        type="submit"
+        class="icon-btn favourite-btn {% if is_favourited %}is-active{% endif %}"
+        aria-label="{% if is_favourited %}Remove from favourites{% else %}Add to favourites{% endif %}"
+        aria-pressed="{% if is_favourited %}true{% else %}false{% endif %}"
+    >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="{% if is_favourited %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 5c-2.5 4.65-9.5 9-9.5 9z"></path></svg>
+    </button>
+</form>
+{% else %}
+<a href="{% url 'login' %}?next={{ request.path|urlencode }}" class="icon-btn favourite-btn" aria-label="Log in to add to favourites">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 5c-2.5 4.65-9.5 9-9.5 9z"></path></svg>
+</a>
+{% endif %}

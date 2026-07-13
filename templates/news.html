@@ -27,12 +27,7 @@
     <div class="archive-grid">
         {% for item in items %}
         <article class="archive-card show">
-            {% if forloop.first %}
-            <span class="news-new-badge">
-                <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><circle cx="12" cy="12" r="6"></circle></svg>
-                New
-            </span>
-            {% endif %}
+            {% if forloop.first %}{% include '_new_badge.html' %}{% endif %}
             {% if user.is_staff %}
             <div class="card-menu-wrap">
                 {% include '_card_menu.html' with actions=item.menu_actions %}

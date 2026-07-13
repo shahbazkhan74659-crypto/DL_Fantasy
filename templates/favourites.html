@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}Favourites | DL Fantasy{% endblock %}
+{% block content %}
+
+<section class="hero hero-compact">
+    <div class="hero-content parallax">
+        <h1>Favourites</h1>
+    </div>
+</section>
+
+<section class="archive">
+    <div class="archive-grid">
+        {% for favourite in favourites %}
+        {% if favourite.content.category == 'godvalley' %}
+        {% url 'godvalley_detail' favourite.content.slug as favourite_url %}
+        {% else %}
+        {% url 'writings_detail' favourite.content.category favourite.content.slug as favourite_url %}
+        {% endif %}
+        {% if forloop.first and favourites.number == 1 %}
+        {% include '_archive_card.html' with url=favourite_url title_text=favourite.content.title meta_text=favourite.content.get_category_display body_text=favourite.content.excerpt show_new_badge=True %}
+        {% else %}
+        {% include '_archive_card.html' with url=favourite_url title_text=favourite.content.title meta_text=favourite.content.get_category_display body_text=favourite.content.excerpt %}
+        {% endif %}
+        {% empty %}
+        <p>No favourites yet — tap the heart on any story or chapter to add it here.</p>
+        {% endfor %}
+    </div>
+    {% include '_pagination.html' with page_obj=favourites %}
+</section>
+
+{% endblock %}

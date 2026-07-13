@@ -429,10 +429,29 @@ input:focus-visible,
 /* HERO */
 
 .hero{
+    position:relative;
     min-height:90vh;
     display:flex;
     align-items:center;
     padding:0 var(--gutter);
+}
+
+.favourite-btn{
+    position:absolute;
+    top:var(--gutter);
+    right:var(--gutter);
+    z-index:5;
+}
+
+.favourite-btn.is-active{
+    background:var(--gold-dim);
+    border-color:var(--gold);
+    color:var(--gold);
+}
+
+.favourite-btn.is-active:hover{
+    background:var(--gold);
+    color:#0a0a0a;
 }
 
 /* On the homepage, the search bar above the hero already fills part of the viewport, so the

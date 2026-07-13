@@ -1,0 +1,10 @@
+{% comment %}
+"New" badge — marks the single most recent News card. News.Meta.ordering is '-created_at', so
+the caller only needs to include this on the first item of that queryset:
+
+    {% if forloop.first %}{% include '_new_badge.html' %}{% endif %}
+{% endcomment %}
+<span class="news-new-badge">
+    <svg viewBox="0 0 24 24" width="11" height="11" fill="currentColor"><circle cx="12" cy="12" r="6"></circle></svg>
+    New
+</span>

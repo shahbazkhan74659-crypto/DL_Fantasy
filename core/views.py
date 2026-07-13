@@ -6,13 +6,13 @@ from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, DurationField, ExpressionWrapper, F, Sum
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from upload.models import Content, News, ReadingHistory
+from upload.models import Content, Favourite, News, ReadingHistory
 from users.models import DeletedUser, User, VisitSession
 
 from . import google_oauth
@@ -66,12 +66,21 @@ def _record_reading_history(request, content):
         history.save()  # bumps auto_now viewed_at so re-reads float back to the top
 
 
+def _is_favourited(request, content):
+    if not request.user.is_authenticated:
+        return False
+    return Favourite.objects.filter(user=request.user, content=content).exists()
+
+
 def writings_detail(request, category, slug):
     if category not in WRITINGS_CATEGORIES:
         raise Http404("Unknown writings category")
     entry = get_object_or_404(Content, category=category, slug=slug, is_published=True)
     _record_reading_history(request, entry)
-    return render(request, 'writings_detail.html', {'entry': entry})
+    return render(request, 'writings_detail.html', {
+        'entry': entry,
+        'is_favourited': _is_favourited(request, entry),
+    })
 
 
 def godvalley_list(request):
@@ -110,7 +119,28 @@ def godvalley_detail(request, slug):
         'chapter': chapter,
         'prev_chapter': prev_chapter,
         'next_chapter': next_chapter,
+        'is_favourited': _is_favourited(request, chapter),
     })
+
+
+@login_required
+def toggle_favourite(request, content_id):
+    if request.method != 'POST':
+        raise Http404
+    content = get_object_or_404(Content, pk=content_id, is_published=True)
+    favourite, created = Favourite.objects.get_or_create(user=request.user, content=content)
+    if not created:
+        favourite.delete()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'is_favourited': created})
+    next_url = request.POST.get('next')
+    return redirect(_safe_next(request, next_url))
+
+
+@login_required
+def favourites(request):
+    items = Favourite.objects.filter(user=request.user).select_related('content')
+    return render(request, 'favourites.html', {'favourites': _paginate(request, items)})
 
 
 def search(request):
