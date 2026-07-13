@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from upload.models import Content, Favourite, News, ReadingHistory
+from upload.models import Content, Favourite, News, ReadingHistory, ReadingListItem
 from users.models import DeletedUser, User, VisitSession
 
 from . import google_oauth
@@ -72,6 +72,12 @@ def _is_favourited(request, content):
     return Favourite.objects.filter(user=request.user, content=content).exists()
 
 
+def _is_in_reading_list(request, content):
+    if not request.user.is_authenticated:
+        return False
+    return ReadingListItem.objects.filter(user=request.user, content=content).exists()
+
+
 def writings_detail(request, category, slug):
     if category not in WRITINGS_CATEGORIES:
         raise Http404("Unknown writings category")
@@ -80,6 +86,7 @@ def writings_detail(request, category, slug):
     return render(request, 'writings_detail.html', {
         'entry': entry,
         'is_favourited': _is_favourited(request, entry),
+        'is_in_reading_list': _is_in_reading_list(request, entry),
     })
 
 
@@ -90,7 +97,7 @@ def godvalley_list(request):
 def godvalley_chapters(request):
     chapters = Content.objects.filter(
         category=Content.Category.GODVALLEY, is_published=True,
-    ).order_by('chapter_number')
+    ).order_by('-chapter_number')
 
     query = request.GET.get('q', '').strip()
     if query:
@@ -120,6 +127,7 @@ def godvalley_detail(request, slug):
         'prev_chapter': prev_chapter,
         'next_chapter': next_chapter,
         'is_favourited': _is_favourited(request, chapter),
+        'is_in_reading_list': _is_in_reading_list(request, chapter),
     })
 
 
@@ -141,6 +149,26 @@ def toggle_favourite(request, content_id):
 def favourites(request):
     items = Favourite.objects.filter(user=request.user).select_related('content')
     return render(request, 'favourites.html', {'favourites': _paginate(request, items)})
+
+
+@login_required
+def toggle_reading_list_item(request, content_id):
+    if request.method != 'POST':
+        raise Http404
+    content = get_object_or_404(Content, pk=content_id, is_published=True)
+    item, created = ReadingListItem.objects.get_or_create(user=request.user, content=content)
+    if not created:
+        item.delete()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'is_in_reading_list': created})
+    next_url = request.POST.get('next')
+    return redirect(_safe_next(request, next_url))
+
+
+@login_required
+def reading_list(request):
+    items = ReadingListItem.objects.filter(user=request.user).select_related('content')
+    return render(request, 'reading_list.html', {'reading_list_items': _paginate(request, items)})
 
 
 def search(request):

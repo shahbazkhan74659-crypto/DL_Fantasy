@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Content, Favourite, News, ReadingHistory
+from .models import Content, Favourite, News, ReadingHistory, ReadingListItem
 
 
 @admin.register(Content)
@@ -31,6 +31,14 @@ class ReadingHistoryAdmin(admin.ModelAdmin):
 
 @admin.register(Favourite)
 class FavouriteAdmin(admin.ModelAdmin):
+    list_display = ('user', 'content', 'created_at')
+    list_filter = ('user',)
+    ordering = ('-created_at',)
+    readonly_fields = ('user', 'content', 'created_at')
+
+
+@admin.register(ReadingListItem)
+class ReadingListItemAdmin(admin.ModelAdmin):
     list_display = ('user', 'content', 'created_at')
     list_filter = ('user',)
     ordering = ('-created_at',)

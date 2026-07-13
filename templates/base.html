@@ -86,10 +86,10 @@
                 <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1z"></path></svg>
                 <span>Bookmarks</span>
             </button>
-            <button type="button" class="drawer-link">
+            <a href="{% url 'reading_list' %}" class="drawer-link">
                 <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5c2.2-1 5-1 7 .5v13c-2-1.5-4.8-1.5-7-.5v-13z"></path><path d="M21 5.5c-2.2-1-5-1-7 .5v13c2-1.5 4.8-1.5 7-.5v-13z"></path></svg>
                 <span>Reading List</span>
-            </button>
+            </a>
             <button type="button" class="drawer-link">
                 <svg class="drawer-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v11.5"></path><path d="M7.5 11l4.5 4.5L16.5 11"></path><path d="M4.5 19.5h15"></path></svg>
                 <span>Downloads</span>
@@ -142,6 +142,7 @@
     <script src="{% static 'js/main.js' %}"></script>
     <script src="{% static 'js/card-menu.js' %}"></script>
     <script src="{% static 'js/favourite.js' %}"></script>
+    <script src="{% static 'js/reading-list.js' %}"></script>
     {% block extra_js %}{% endblock %}
 
 </body>

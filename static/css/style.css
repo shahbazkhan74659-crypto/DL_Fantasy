@@ -436,20 +436,24 @@ input:focus-visible,
     padding:0 var(--gutter);
 }
 
-.favourite-btn{
+.hero-actions{
     position:absolute;
     top:var(--gutter);
     right:var(--gutter);
     z-index:5;
+    display:flex;
+    gap:10px;
 }
 
-.favourite-btn.is-active{
+.favourite-btn.is-active,
+.reading-list-btn.is-active{
     background:var(--gold-dim);
     border-color:var(--gold);
     color:var(--gold);
 }
 
-.favourite-btn.is-active:hover{
+.favourite-btn.is-active:hover,
+.reading-list-btn.is-active:hover{
     background:var(--gold);
     color:#0a0a0a;
 }

@@ -1,0 +1,27 @@
+{% comment %}
+Reading-list toggle button. Include on any detail page with:
+
+    {% include '_reading_list_button.html' with content=entry is_in_reading_list=is_in_reading_list %}
+
+`content` is a upload.models.Content instance; `is_in_reading_list` is a bool the view computed via
+core.views._is_in_reading_list. Posts to core.views.toggle_reading_list_item, which redirects back
+to whatever page it was clicked from (the `next` field below).
+{% endcomment %}
+{% if user.is_authenticated %}
+<form method="post" action="{% url 'toggle_reading_list_item' content.id %}" class="reading-list-form">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <button
+        type="submit"
+        class="icon-btn reading-list-btn {% if is_in_reading_list %}is-active{% endif %}"
+        aria-label="{% if is_in_reading_list %}Remove from reading list{% else %}Add to reading list{% endif %}"
+        aria-pressed="{% if is_in_reading_list %}true{% else %}false{% endif %}"
+    >
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="{% if is_in_reading_list %}currentColor{% else %}none{% endif %}" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5c2.2-1 5-1 7 .5v13c-2-1.5-4.8-1.5-7-.5v-13z"></path><path d="M21 5.5c-2.2-1-5-1-7 .5v13c2-1.5 4.8-1.5 7-.5v-13z"></path></svg>
+    </button>
+</form>
+{% else %}
+<a href="{% url 'login' %}?next={{ request.path|urlencode }}" class="icon-btn reading-list-btn" aria-label="Log in to add to reading list">
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 5.5c2.2-1 5-1 7 .5v13c-2-1.5-4.8-1.5-7-.5v-13z"></path><path d="M21 5.5c-2.2-1-5-1-7 .5v13c2-1.5 4.8-1.5 7-.5v-13z"></path></svg>
+</a>
+{% endif %}

@@ -92,6 +92,29 @@ class Favourite(models.Model):
         return f"{self.user} favourited {self.content}"
 
 
+class ReadingListItem(models.Model):
+    """One row per (user, content) a visitor has explicitly saved via the bookmark button on a
+    detail page — toggled from core.views.toggle_reading_list_item, deduped the same way
+    Favourite is (a real unique constraint), and surfaced as the "Reading List" page linked from
+    the side drawer. Deliberately distinct from ReadingHistory: that one is an automatic view log,
+    this one is a user-curated "save for later" list.
+    """
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reading_list_items',
+    )
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'content'], name='unique_user_content_reading_list'),
+        ]
+
+    def __str__(self):
+        return f"{self.user} saved {self.content} to reading list"
+
+
 class News(models.Model):
     """Short dispatches/announcements — deliberately separate from Content, not another
     category on it: no chapters, no long-form body, just title/tag/body created via the

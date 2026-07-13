@@ -2,7 +2,10 @@
 {% block content %}
 
 <section class="hero">
-    {% include '_favourite_button.html' with content=entry is_favourited=is_favourited %}
+    <div class="hero-actions">
+        {% include '_favourite_button.html' with content=entry is_favourited=is_favourited %}
+        {% include '_reading_list_button.html' with content=entry is_in_reading_list=is_in_reading_list %}
+    </div>
     <div class="hero-content parallax">
         <h1>{{ entry.title }}</h1>
         <p class="meta">{{ entry.get_category_display }} · {{ entry.created_at|date:"F j, Y" }}</p>

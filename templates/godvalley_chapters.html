@@ -16,6 +16,7 @@
     <div class="archive-grid">
         {% for chapter in chapters %}
         <a class="archive-card concept-card show" href="{% url 'godvalley_detail' chapter.slug %}">
+            {% if forloop.first and chapters.number == 1 %}{% include '_new_badge.html' %}{% endif %}
             <h3>Ch. {{ chapter.chapter_number }} — {{ chapter.title }}</h3>
             <p>{{ chapter.excerpt }}</p>
         </a>

@@ -2,7 +2,10 @@
 {% block content %}
 
 <section class="hero">
-    {% include '_favourite_button.html' with content=chapter is_favourited=is_favourited %}
+    <div class="hero-actions">
+        {% include '_favourite_button.html' with content=chapter is_favourited=is_favourited %}
+        {% include '_reading_list_button.html' with content=chapter is_in_reading_list=is_in_reading_list %}
+    </div>
     <div class="hero-content parallax">
         <h1>
             Chapter {{ chapter.chapter_number }} — {{ chapter.title }}

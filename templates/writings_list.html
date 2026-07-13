@@ -11,7 +11,11 @@
     <div class="archive-grid">
         {% for entry in entries %}
         {% url 'writings_detail' category entry.slug as entry_url %}
+        {% if forloop.first and entries.number == 1 %}
+        {% include '_archive_card.html' with url=entry_url title_text=entry.title meta_text=entry.created_at|date:"F j, Y" body_text=entry.excerpt show_new_badge=True %}
+        {% else %}
         {% include '_archive_card.html' with url=entry_url title_text=entry.title meta_text=entry.created_at|date:"F j, Y" body_text=entry.excerpt %}
+        {% endif %}
         {% empty %}
         <p>Nothing here yet — check back soon.</p>
         {% endfor %}
