@@ -50,3 +50,19 @@ class StyledPasswordChangeForm(SetPasswordForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.update(FIELD_ATTRS)
+
+
+class UserEditForm(forms.ModelForm):
+    """Backs the edit-user modal on the admin-only /users/ page. Deliberately scoped to identity
+    fields only (username/email/active) — staff/superuser status isn't editable here, so this
+    form can't be used to self-escalate or de-escalate admin privileges by accident.
+    """
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'is_active')
+
+    def clean_email(self):
+        email = self.cleaned_data['email']
+        if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError('Another account already uses this email.')
+        return email

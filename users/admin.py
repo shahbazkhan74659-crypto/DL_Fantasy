@@ -1,9 +1,22 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import LoginHistory, User, VisitSession
+from .models import DeletedUser, LoginHistory, User, VisitSession
 
 admin.site.register(User, UserAdmin)
+
+
+@admin.register(DeletedUser)
+class DeletedUserAdmin(admin.ModelAdmin):
+    list_display = ('username', 'email', 'was_staff', 'was_superuser', 'deleted_at', 'deleted_by')
+    list_filter = ('was_staff', 'was_superuser')
+    ordering = ('-deleted_at',)
+    readonly_fields = (
+        'username', 'email', 'date_joined', 'was_staff', 'was_superuser', 'deleted_at', 'deleted_by',
+    )
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(LoginHistory)

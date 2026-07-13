@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Users | DL Fantasy{% endblock %}
+{% block content %}
+
+<div class="archive-container">
+
+    <header class="archive-header">
+        <span class="section-tag">Admin</span>
+        <h1>Users</h1>
+        <p>{{ users|length }} registered account{{ users|length|pluralize }}.</p>
+    </header>
+
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="users-table-wrap">
+        <table class="users-table">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Joined</th>
+                    <th>Last Login</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account_user in users %}
+                <tr>
+                    <td>{{ account_user.username }}</td>
+                    <td>{{ account_user.email|default:"—" }}</td>
+                    <td>{{ account_user.date_joined|date:"M j, Y" }}</td>
+                    <td>{{ account_user.last_login|date:"M j, Y, g:i a"|default:"Never" }}</td>
+                    <td>
+                        {% if account_user.is_superuser %}
+                        <span class="user-badge user-badge-admin">Admin</span>
+                        {% elif account_user.is_staff %}
+                        <span class="user-badge user-badge-staff">Staff</span>
+                        {% else %}
+                        <span class="user-badge">User</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if account_user.is_active %}
+                        <span class="user-status user-status-active">Active</span>
+                        {% else %}
+                        <span class="user-status user-status-inactive">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="user-actions">
+                            <button
+                                type="button"
+                                class="icon-btn-table edit-user-btn"
+                                aria-label="Edit {{ account_user.username }}"
+                                data-edit-url="{% url 'edit_user' account_user.id %}"
+                                data-username="{{ account_user.username }}"
+                                data-email="{{ account_user.email }}"
+                                data-active="{% if account_user.is_active %}1{% else %}0{% endif %}"
+                            >
+                                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-2.83l-1.17-1.17a2 2 0 0 0-2.83 0L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>
+                            </button>
+                            {% if not account_user.is_staff and not account_user.is_superuser %}
+                            <form method="post" action="{% url 'delete_user' account_user.id %}" class="delete-user-form">
+                                {% csrf_token %}
+                                <button
+                                    type="submit"
+                                    class="icon-btn-table icon-btn-danger"
+                                    aria-label="Delete {{ account_user.username }}"
+                                    data-confirm="Delete {{ account_user.username }}? This can't be undone."
+                                >
+                                    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14"></path><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path><path d="M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<div class="modal-overlay" id="edit-user-overlay"></div>
+<div class="modal" id="edit-user-modal" role="dialog" aria-modal="true" aria-labelledby="edit-user-title" aria-hidden="true">
+    <div class="modal-header">
+        <h2 id="edit-user-title">Edit User</h2>
+        <button type="button" class="drawer-close" id="edit-user-close" aria-label="Close">&times;</button>
+    </div>
+    <form method="post" action="" id="edit-user-form" class="auth-form">
+        {% csrf_token %}
+        <div class="auth-field-group">
+            <label for="edit-username">Username</label>
+            <input type="text" name="username" id="edit-username" class="auth-field" required maxlength="150">
+        </div>
+        <div class="auth-field-group">
+            <label for="edit-email">Email</label>
+            <input type="email" name="email" id="edit-email" class="auth-field" required>
+        </div>
+        <div class="auth-field-checkbox">
+            <label>
+                <input type="checkbox" name="is_active" id="edit-active">
+                Active account
+            </label>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn-outline" id="edit-user-cancel">Cancel</button>
+            <button type="submit" class="btn">Save Changes</button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/users-list.js' %}"></script>
+{% endblock %}

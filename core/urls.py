@@ -25,6 +25,9 @@ urlpatterns = [
     path('login/google/callback/', views.google_callback, name='google_callback'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
     path('account/', views.account, name='account'),
+    path('users/', views.users_list, name='users_list'),
+    path('users/<int:user_id>/edit/', views.edit_user, name='edit_user'),
+    path('users/<int:user_id>/delete/', views.delete_user, name='delete_user'),
     path(
         'account/password/',
         auth_views.PasswordChangeView.as_view(

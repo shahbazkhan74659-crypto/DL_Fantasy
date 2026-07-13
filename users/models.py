@@ -15,6 +15,29 @@ class User(AbstractUser):
     )
 
 
+class DeletedUser(models.Model):
+    """Snapshot of an account at the moment it's removed via the admin-only Users page
+    (core.views.delete_user) — a soft-delete audit trail, not a restore mechanism: the real `User`
+    row (and its CASCADE-linked VisitSession/LoginHistory rows) is actually deleted, this just
+    keeps a record of who existed and who removed them.
+    """
+    username = models.CharField(max_length=150)
+    email = models.EmailField(blank=True)
+    date_joined = models.DateTimeField()
+    was_staff = models.BooleanField(default=False)
+    was_superuser = models.BooleanField(default=False)
+    deleted_at = models.DateTimeField(auto_now_add=True)
+    deleted_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='deletions_performed',
+    )
+
+    class Meta:
+        ordering = ['-deleted_at']
+
+    def __str__(self):
+        return f"{self.username} (deleted {self.deleted_at:%Y-%m-%d})"
+
+
 class LoginHistory(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='login_history')
     timestamp = models.DateTimeField(auto_now_add=True)

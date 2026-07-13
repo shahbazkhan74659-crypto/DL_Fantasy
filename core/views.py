@@ -13,10 +13,10 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from upload.models import Content
-from users.models import User, VisitSession
+from users.models import DeletedUser, User, VisitSession
 
 from . import google_oauth
-from .forms import SignupForm, StyledAuthenticationForm
+from .forms import SignupForm, StyledAuthenticationForm, UserEditForm
 
 WRITINGS_CATEGORIES = (
     Content.Category.FICTION,
@@ -162,7 +162,6 @@ def login_view(request):
         form = StyledAuthenticationForm(request, data=request.POST)
         if form.is_valid():
             auth_login(request, form.get_user())
-            messages.success(request, f"Welcome back, {form.get_user().username}.")
             return redirect(_safe_next(request, next_url))
     else:
         form = StyledAuthenticationForm(request)
@@ -266,3 +265,50 @@ def account(request):
         'total_minutes_30d': total_minutes_30d % 60,
         'max_count': max_count,
     })
+
+
+@login_required
+def users_list(request):
+    if not request.user.is_staff:
+        raise Http404
+    users = User.objects.all().order_by('-is_superuser', '-is_staff', '-date_joined')
+    return render(request, 'users_list.html', {'users': users})
+
+
+@login_required
+def edit_user(request, user_id):
+    if not request.user.is_staff:
+        raise Http404
+    target = get_object_or_404(User, pk=user_id)
+    if request.method == 'POST':
+        form = UserEditForm(request.POST, instance=target)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"{target.username} was updated.")
+        else:
+            errors = '; '.join(f"{field}: {', '.join(errs)}" for field, errs in form.errors.items())
+            messages.error(request, f"Could not update {target.username} — {errors}")
+    return redirect('users_list')
+
+
+@login_required
+def delete_user(request, user_id):
+    if not request.user.is_staff or request.method != 'POST':
+        raise Http404
+    target = get_object_or_404(User, pk=user_id)
+    if target.is_staff or target.is_superuser:
+        messages.error(request, "Admin accounts can't be deleted.")
+        return redirect('users_list')
+
+    DeletedUser.objects.create(
+        username=target.username,
+        email=target.email,
+        date_joined=target.date_joined,
+        was_staff=target.is_staff,
+        was_superuser=target.is_superuser,
+        deleted_by=request.user,
+    )
+    username = target.username
+    target.delete()
+    messages.success(request, f"{username} was deleted.")
+    return redirect('users_list')

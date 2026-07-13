@@ -378,6 +378,7 @@ input:focus-visible,
     align-items:center;
     gap:14px;
     text-align:left;
+    text-decoration:none;
     width:100%;
     background:none;
     border:none;
@@ -1337,4 +1338,219 @@ footer small{
 .account-actions{
     display:flex;
     gap:var(--space-md);
+}
+
+/* USERS TABLE (admin-only directory) */
+
+.users-table-wrap{
+    overflow-x:auto;
+    border:1px solid var(--border-dark);
+    border-radius:var(--radius-md);
+    background:var(--bg-secondary);
+}
+
+.users-table{
+    width:100%;
+    border-collapse:collapse;
+    font-family:'Inter', sans-serif;
+    font-size:0.9rem;
+}
+
+.users-table th,
+.users-table td{
+    padding:14px 18px;
+    text-align:left;
+    white-space:nowrap;
+}
+
+.users-table thead th{
+    background:var(--bg-raised);
+    color:var(--text-muted);
+    font-size:0.75rem;
+    letter-spacing:0.5px;
+    text-transform:uppercase;
+    border-bottom:1px solid var(--border-dark);
+}
+
+.users-table tbody tr{
+    border-bottom:1px solid var(--border-dark);
+    transition:background 0.2s var(--ease);
+}
+
+.users-table tbody tr:last-child{
+    border-bottom:none;
+}
+
+.users-table tbody tr:hover{
+    background:var(--bg-raised);
+}
+
+.users-table td{
+    color:var(--text-secondary);
+}
+
+.users-table td:first-child{
+    color:var(--text-primary);
+    font-weight:500;
+}
+
+.user-badge{
+    display:inline-block;
+    padding:3px 10px;
+    border-radius:999px;
+    font-size:0.75rem;
+    font-weight:600;
+    border:1px solid var(--border-dark);
+    color:var(--text-muted);
+}
+
+.user-badge-admin{
+    color:var(--gold);
+    border-color:var(--gold-dim);
+    background:var(--gold-glow);
+}
+
+.user-badge-staff{
+    color:var(--text-secondary);
+    border-color:#333;
+}
+
+.user-status{
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    font-size:0.85rem;
+}
+
+.user-status::before{
+    content:"";
+    width:7px;
+    height:7px;
+    border-radius:50%;
+    background:var(--text-faint);
+}
+
+.user-status-active::before{
+    background:var(--success);
+}
+
+.user-status-inactive::before{
+    background:var(--danger);
+}
+
+.user-actions{
+    display:flex;
+    gap:8px;
+}
+
+.icon-btn-table{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    height:32px;
+    background:none;
+    border:1px solid var(--border-dark);
+    border-radius:var(--radius-sm);
+    color:var(--text-muted);
+    cursor:pointer;
+    transition:color 0.25s var(--ease), border-color 0.25s var(--ease);
+}
+
+.icon-btn-table:hover{
+    color:var(--gold);
+    border-color:var(--gold-dim);
+}
+
+.icon-btn-danger:hover{
+    color:var(--danger);
+    border-color:var(--danger);
+}
+
+/* EDIT USER MODAL */
+
+.modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.6);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.3s var(--ease);
+    z-index:1200;
+}
+
+.modal-overlay.is-open{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.modal{
+    position:fixed;
+    top:50%;
+    left:50%;
+    transform:translate(-50%, -48%);
+    width:min(420px, 90vw);
+    background:var(--bg-secondary);
+    border:1px solid var(--border-dark);
+    border-radius:var(--radius-md);
+    padding:var(--space-lg);
+    box-shadow:var(--shadow-card);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity 0.3s var(--ease), transform 0.3s var(--ease);
+    z-index:1201;
+}
+
+.modal.is-open{
+    opacity:1;
+    pointer-events:auto;
+    transform:translate(-50%, -50%);
+}
+
+.modal-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:var(--space-lg);
+    padding-bottom:var(--space-sm);
+    border-bottom:1px solid var(--border-dark);
+}
+
+.modal-header h2{
+    font-family:'Cormorant Garamond', serif;
+    font-size:1.5rem;
+    color:var(--gold);
+}
+
+.modal .auth-form{
+    max-width:none;
+}
+
+.modal-actions{
+    display:flex;
+    justify-content:flex-end;
+    gap:12px;
+    margin-top:var(--space-xs);
+}
+
+.auth-field-checkbox{
+    display:flex;
+    align-items:center;
+    margin:-6px 0 4px;
+}
+
+.auth-field-checkbox label{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:'Inter', sans-serif;
+    font-size:0.9rem;
+    color:var(--text-secondary);
+    cursor:pointer;
+}
+
+.auth-field-checkbox input{
+    width:16px;
+    height:16px;
+    accent-color:var(--gold);
 }
