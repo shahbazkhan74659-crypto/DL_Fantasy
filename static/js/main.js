@@ -15,62 +15,127 @@ window.addEventListener("scroll", () => {
     }
 });
 
-// SCROLL REVEAL ANIMATION
+// PAGE-CONTENT-DEPENDENT EFFECTS
+//
+// Bundled into one re-runnable function because list-filters.js swaps
+// main.page-content's innerHTML via AJAX (topic filters, pagination, in-page
+// search) instead of a full page reload — anything that queried the DOM once
+// at script-load time would go stale for cards/parallax elements that arrive
+// after that swap, so this gets called again post-swap via window.initPageEffects().
 
-const cards =
-document.querySelectorAll(".archive-card");
+function initPageEffects() {
 
-const observer =
-new IntersectionObserver((entries) => {
+    // SCROLL REVEAL ANIMATION
 
-    entries.forEach((entry) => {
+    const cards =
+    document.querySelectorAll(".archive-card");
 
-        if(entry.isIntersecting){
+    const observer =
+    new IntersectionObserver((entries) => {
 
-            entry.target.classList.add("show");
-        }
+        entries.forEach((entry) => {
+
+            if(entry.isIntersecting){
+
+                entry.target.classList.add("show");
+            }
+        });
+
+    }, {
+        threshold:0.1
     });
 
-}, {
-    threshold:0.1
-});
+    cards.forEach((card) => {
 
-cards.forEach((card) => {
+        observer.observe(card);
 
-    observer.observe(card);
-
-});
-
-// CARD GLOW EFFECT
-
-const archiveCards =
-document.querySelectorAll(".archive-card");
-
-archiveCards.forEach((card) => {
-
-    card.addEventListener("mousemove", (e) => {
-
-        const rect =
-        card.getBoundingClientRect();
-
-        const x =
-        e.clientX - rect.left;
-
-        const y =
-        e.clientY - rect.top;
-
-        card.style.setProperty(
-            "--x",
-            `${x}px`
-        );
-
-        card.style.setProperty(
-            "--y",
-            `${y}px`
-        );
     });
 
-});
+    // CARD GLOW EFFECT
+
+    cards.forEach((card) => {
+
+        card.addEventListener("mousemove", (e) => {
+
+            const rect =
+            card.getBoundingClientRect();
+
+            const x =
+            e.clientX - rect.left;
+
+            const y =
+            e.clientY - rect.top;
+
+            card.style.setProperty(
+                "--x",
+                `${x}px`
+            );
+
+            card.style.setProperty(
+                "--y",
+                `${y}px`
+            );
+        });
+
+    });
+
+    // PARALLAX HERO EFFECT
+
+    const parallaxElements =
+    document.querySelectorAll(".parallax");
+
+    const prefersReducedMotion =
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if(!prefersReducedMotion){
+
+        parallaxHeroEffect.elements = parallaxElements;
+    }
+
+    // ACTIVE NAVBAR LINK
+
+    const currentPath =
+    window.location.pathname;
+
+    const navItems =
+    document.querySelectorAll(".nav-item");
+
+    navItems.forEach((item) => {
+
+        const itemPath =
+        item.getAttribute("href");
+
+        item.classList.toggle("active", currentPath === itemPath);
+
+    });
+
+}
+
+const parallaxHeroEffect = { elements: [] };
+
+const prefersReducedMotionGlobal =
+window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+if(!prefersReducedMotionGlobal){
+
+    window.addEventListener("scroll", () => {
+
+        const scrollY =
+        window.scrollY;
+
+        parallaxHeroEffect.elements.forEach((element) => {
+
+            element.style.transform =
+            `translateY(${scrollY * 0.2}px)`;
+
+        });
+
+    });
+
+}
+
+initPageEffects();
+window.initPageEffects = initPageEffects;
 
 // READING PROGRESS BAR
 
@@ -100,6 +165,14 @@ const links =
 document.querySelectorAll("a");
 
 links.forEach((link) => {
+
+    // Skip topic-filter chips, pagination links, and in-page search boxes —
+    // list-filters.js handles those itself via a delegated listener, swapping
+    // main.page-content in place instead of doing a full page navigation.
+    if(link.closest(".topic-filter, .pagination")){
+
+        return;
+    }
 
     link.addEventListener("click", (e) => {
 
@@ -132,52 +205,6 @@ links.forEach((link) => {
 window.addEventListener("pageshow", () => {
 
     pageContent.classList.remove("fade-out");
-
-});
-
-// PARALLAX HERO EFFECT
-
-const parallaxElements =
-document.querySelectorAll(".parallax");
-
-const prefersReducedMotion =
-window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-if(!prefersReducedMotion){
-
-    window.addEventListener("scroll", () => {
-
-        const scrollY =
-        window.scrollY;
-
-        parallaxElements.forEach((element) => {
-
-            element.style.transform =
-            `translateY(${scrollY * 0.2}px)`;
-
-        });
-
-    });
-
-}
-
-// ACTIVE NAVBAR LINK
-
-const currentPath =
-window.location.pathname;
-
-const navItems =
-document.querySelectorAll(".nav-item");
-
-navItems.forEach((item) => {
-
-    const itemPath =
-    item.getAttribute("href");
-
-    if(currentPath === itemPath){
-
-        item.classList.add("active");
-    }
 
 });
 
