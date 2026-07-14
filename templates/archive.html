@@ -2,7 +2,7 @@
 {% block title %}The Archive | DL Fantasy{% endblock %}
 {% block content %}
 
-<div class="archive-container">
+<div class="archive-container archive-index">
 
     <header class="archive-header">
         <h1>The Archive</h1>
@@ -20,6 +20,7 @@
             <span class="item-arrow">&rarr;</span>
         </a>
 
+        {% if user.is_staff %}
         <a href="{% url 'concepts' %}" class="archive-list-item">
             <span class="item-number">02</span>
             <div class="item-meta">
@@ -28,9 +29,10 @@
             </div>
             <span class="item-arrow">&rarr;</span>
         </a>
+        {% endif %}
 
         <a href="{% url 'collections' %}" class="archive-list-item">
-            <span class="item-number">03</span>
+            <span class="item-number">{% if user.is_staff %}03{% else %}02{% endif %}</span>
             <div class="item-meta">
                 <h2>Collections</h2>
                 <p>Anthologies, compiled fragments, and aggregated contextual logs.</p>
@@ -39,7 +41,7 @@
         </a>
 
         <a href="{% url 'about' %}" class="archive-list-item">
-            <span class="item-number">04</span>
+            <span class="item-number">{% if user.is_staff %}04{% else %}03{% endif %}</span>
             <div class="item-meta">
                 <h2>About</h2>
                 <p>The framework design, administrator profile, and systemic overview of DL Fantasy.</p>

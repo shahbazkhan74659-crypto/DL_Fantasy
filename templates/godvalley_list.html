@@ -5,7 +5,7 @@ The God Valley | DL Fantasy
 
 {% block content %}
 
-<section class="hero">
+<section class="hero hero-godvalley-intro">
     <div class="hero-content parallax">
         <h1>The God Valley</h1>
         <p>
@@ -18,7 +18,9 @@ The God Valley | DL Fantasy
         </p>
         <div class="hero-buttons">
             <a href="{% url 'godvalley_chapters' %}" class="btn">Read Chapters</a>
+            {% if user.is_staff %}
             <a href="{% url 'concepts' %}" class="btn-outline">Explore Lore</a>
+            {% endif %}
         </div>
     </div>
 </section>

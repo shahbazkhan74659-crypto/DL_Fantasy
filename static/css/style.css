@@ -480,10 +480,11 @@ input:focus-visible,
     color:#0a0a0a;
 }
 
-/* On the homepage, the search bar above the hero already fills part of the viewport, so the
-   full 90vh treatment leaves a big dead gap before the heading — give it less room to center in. */
-.home-search + .hero{
-    min-height:55vh;
+/* The God Valley intro hero has the same short-content-in-a-90vh-hero gap the homepage's
+   hero has (title + one paragraph + buttons doesn't need the full splash height), leaving a
+   big dead gap before "The Story" section below it. */
+.hero-godvalley-intro{
+    min-height:60vh;
 }
 
 /* Short text-only hero (e.g. news_detail) — the full 90vh splash treatment is meant for
@@ -494,6 +495,13 @@ input:focus-visible,
 }
 
 .hero-compact + .archive{
+    padding-top:var(--space-lg);
+}
+
+/* Writings hub: just a title + one-line subtitle, so hero-compact's default 90px top
+   padding (tuned for pages needing more breathing room) leaves an oversized gap before the
+   archive grid below it. Must come after .hero-compact to win the cascade (equal specificity). */
+.hero-writings-intro{
     padding-top:var(--space-lg);
 }
 
@@ -946,6 +954,66 @@ footer small{
     font-size:1.05rem;
 }
 
+.home-spotlight-actions{
+    display:flex;
+    justify-content:center;
+    margin-top:var(--space-lg);
+}
+
+/* Spotlight row — 6 small square cards in one row, sharing .archive-card's exact color/hover
+   language (border, background, gold lift-on-hover) so it reads as the same design system,
+   just a smaller/denser variant rather than the full writing-length archive cards. */
+.spotlight-row{
+    display:flex;
+    gap:var(--space-sm);
+}
+
+.spotlight-item{
+    flex:1 1 0;
+    min-width:0;
+    aspect-ratio:1/1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:var(--space-sm);
+    border:1px solid var(--border-dark);
+    border-radius:var(--radius-md);
+    background:#2a1c12;
+    text-decoration:none;
+    text-align:center;
+    position:relative;
+    overflow:hidden;
+    transition:transform 0.5s var(--ease), border-color 0.4s var(--ease), box-shadow 0.5s var(--ease), background 0.4s var(--ease);
+}
+
+.spotlight-item:hover{
+    transform:translateY(-6px);
+    border-color:var(--gold);
+    background:#3a2718;
+    box-shadow:var(--shadow-card);
+}
+
+.spotlight-item span{
+    color:var(--gold);
+    font-family:'Cormorant Garamond', serif;
+    font-size:clamp(0.95rem, 0.8rem + 0.4vw, 1.1rem);
+    line-height:1.3;
+    display:-webkit-box;
+    -webkit-line-clamp:4;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+}
+
+@media (max-width:900px){
+    .spotlight-row{
+        flex-wrap:wrap;
+    }
+
+    .spotlight-item{
+        flex:1 1 calc(50% - var(--space-sm));
+    }
+}
+
 .chapter-content p{
     margin-bottom:24px;
 }
@@ -1046,6 +1114,13 @@ footer small{
     max-width:1000px;
     margin:60px auto;
     padding:0 20px;
+}
+
+/* The Archive directory page's own header sits directly under the navbar with nothing else
+   above it, so the shared .archive-container top margin (tuned for pages like /news/ and
+   /profile/ that need more clearance) reads as an oversized gap here. */
+.archive-index{
+    margin-top:24px;
 }
 
 .archive-header{

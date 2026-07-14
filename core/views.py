@@ -32,9 +32,29 @@ def _paginate(request, queryset):
     return Paginator(queryset, PAGE_SIZE).get_page(request.GET.get('page'))
 
 
+SPOTLIGHT_SIZE = 6
+
+
+def _content_url(entry):
+    if entry.category == Content.Category.GODVALLEY:
+        return reverse('godvalley_detail', args=[entry.slug])
+    return reverse('writings_detail', args=[entry.category, entry.slug])
+
+
 def home(request):
     recent = Content.objects.filter(is_published=True).order_by('-created_at')[:6]
-    return render(request, 'home.html', {'recent': recent})
+    spotlight = Content.objects.filter(is_published=True).order_by('?')[:SPOTLIGHT_SIZE]
+    return render(request, 'home.html', {'recent': recent, 'spotlight': spotlight})
+
+
+def shuffle_spotlight(request):
+    entries = Content.objects.filter(is_published=True).order_by('?')[:SPOTLIGHT_SIZE]
+    return JsonResponse({
+        'items': [
+            {'url': _content_url(entry), 'title': entry.title}
+            for entry in entries
+        ],
+    })
 
 
 def writings(request):
@@ -222,7 +242,10 @@ def archive(request):
     return render(request, 'archive.html')
 
 
+@login_required
 def concepts(request):
+    if not request.user.is_staff:
+        raise Http404
     return render(request, 'concepts.html')
 
 

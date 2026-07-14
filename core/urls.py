@@ -7,6 +7,7 @@ from .forms import StyledPasswordChangeForm
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('spotlight/shuffle/', views.shuffle_spotlight, name='shuffle_spotlight'),
     path('writings/', views.writings, name='writings'),
     path('writings/<slug:category>/', views.writings_category_list, name='writings_category_list'),
     path('writings/<slug:category>/<slug:slug>/', views.writings_detail, name='writings_detail'),

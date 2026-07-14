@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block content %}
 
 <section class="home-search">
@@ -11,11 +12,21 @@
     </form>
 </section>
 
-<section class="hero">
-    <div class="hero-content parallax">
-        <h1>Where Stories, Mythology, and Reality Collide</h1>
-        <p>DL Fantasy is a personal archive of fiction, philosophy, and knowledge — centered on The God Valley.</p>
+<section class="archive home-spotlight">
+    <h2>Discover Something New</h2>
+    <div class="spotlight-row" id="spotlight-grid">
+        {% for entry in spotlight %}
+        {% if entry.category == 'godvalley' %}{% url 'godvalley_detail' entry.slug as entry_url %}{% else %}{% url 'writings_detail' entry.category entry.slug as entry_url %}{% endif %}
+        <a href="{{ entry_url }}" class="spotlight-item"><span>{{ entry.title }}</span></a>
+        {% empty %}
+        <p>No entries yet — check back soon.</p>
+        {% endfor %}
     </div>
+    {% if spotlight %}
+    <div class="home-spotlight-actions">
+        <button type="button" id="spotlight-shuffle-btn" class="btn-outline" data-shuffle-url="{% url 'shuffle_spotlight' %}">Shuffle</button>
+    </div>
+    {% endif %}
 </section>
 
 <section class="archive">
@@ -30,4 +41,7 @@
     </div>
 </section>
 
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/home-spotlight.js' %}"></script>
 {% endblock %}
