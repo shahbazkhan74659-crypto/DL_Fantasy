@@ -8,6 +8,14 @@
 </section>
 
 <section class="archive">
+    {% if subcategories %}
+    <div class="topic-filter">
+        <a href="{% url 'writings_category_list' category %}" class="topic-filter-chip{% if not active_topic %} is-active{% endif %}">All</a>
+        {% for sub in subcategories %}
+        <a href="{% url 'writings_category_list' category %}?topic={{ sub.slug }}" class="topic-filter-chip{% if active_topic == sub.slug %} is-active{% endif %}">{{ sub.name }}</a>
+        {% endfor %}
+    </div>
+    {% endif %}
     <div class="archive-grid">
         {% for entry in entries %}
         {% url 'writings_detail' category entry.slug as entry_url %}
@@ -20,7 +28,7 @@
         <p>Nothing here yet — check back soon.</p>
         {% endfor %}
     </div>
-    {% include '_pagination.html' with page_obj=entries %}
+    {% include '_pagination.html' with page_obj=entries topic=active_topic %}
 </section>
 
 {% endblock %}

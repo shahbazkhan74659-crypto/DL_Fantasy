@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 DL Fantasy — a personal, dark-themed archive site (Django) for one author's fiction, philosophy,
 and mythology writing, centered on a flagship story called "The God Valley". Content is
-single-author (only Mr. Dex writes/publishes, via Django admin). **The original "no visitor
+single-author (only Mr. Dex writes/publishes — via the admin-only **Upload page** below day-to-day,
+or Django admin directly). **The original "no visitor
 accounts" idea is cancelled** — the site now supports and will keep supporting real user accounts:
 sign up, log in, log out, and a personal account page, with more account-driven features expected
 to build on this. Favourite, Reading List, and Downloads are now real, account-backed features (see
@@ -51,16 +52,100 @@ Three apps, one Django project (`dlfantasy/`):
   `LoginHistory` and `VisitSession`, plus `signals.py` / `middleware.py` / `utils.py` /
   `context_processors.py` supporting visitor auth.
 - **`upload`** — owns the `Content` model, a central table for *all* long-form content: Fiction,
-  Philosophy, Mythology, and God Valley chapters, distinguished by a `category` `TextChoices` field.
-  God Valley intentionally lives in this shared table for now; Project-Scope.md calls for splitting
-  it into its own dedicated model later once volume justifies it. Key fields: `chapter_number`
-  (nullable — only meaningful for `category=godvalley`, drives chapter ordering and prev/next nav)
+  Philosophy, Mythology, and God Valley chapters, distinguished by a `category` `TextChoices` field
+  (this top-level 4-way split is a fixed, intentionally-hardcoded set — see **Upload page** below for
+  why, and don't confuse it with `Subcategory`, which is deliberately *not* hardcoded). God Valley
+  intentionally lives in this shared table for now; Project-Scope.md calls for splitting it into its
+  own dedicated model later once volume justifies it. Key fields: `chapter_number` (nullable — used
+  for God Valley and Fiction chapter ordering; blank for Philosophy/Mythology, which aren't chaptered)
   and a `UniqueConstraint` on `(category, slug)` rather than a global-unique slug, since the same
-  slug could otherwise collide across categories. `upload` also owns a separate, deliberately
-  distinct `News` model (short dispatches — no chapters, no `category`, just
-  `title`/`tag`/`body`/`created_at`) — see **News** below.
-- **`core`** — all views and URLs; holds no models. `core/urls.py` is included from the project
-  root `dlfantasy/urls.py` at `''`.
+  slug could otherwise collide across categories. `Content.save()` auto-generates `slug` from `title`
+  when blank (same dedupe-loop pattern as `News.save()` below) — needed because the Upload forms
+  (see **Upload page** below) don't expose a slug field; Django admin's `prepopulated_fields` JS
+  still fills it client-side first, so admin behavior is unchanged. `upload` also owns `Subcategory`
+  (see **Upload page** below) and a separate, deliberately distinct `News` model (short dispatches —
+  no chapters, no `category`, just `title`/`tag`/`body`/`created_at`) — see **News** below. As of
+  the **Upload page** feature, `upload` also owns its own `views.py`/`urls.py`/`forms.py` — a
+  deliberate, called-out divergence from `core`'s "owns all views/URLs" convention below, scoped to
+  just that one feature.
+- **`core`** — all views and URLs *except* the Upload page (see above); holds no models.
+  `core/urls.py` is included from the project root `dlfantasy/urls.py` at `''`.
+
+### Upload page (`/upload/`): admin-only content creation, owned by the `upload` app
+
+A dedicated in-site content-creation surface — not Django admin — living entirely in the `upload`
+app (`upload/views.py`, `upload/urls.py`, `upload/forms.py`, included from `dlfantasy/urls.py` at
+`/upload/`). `/upload/` is a hub with four cards (God Valley / Fiction / Philosophy / Mythology,
+`upload.views.CARDS`), each opening a dedicated big form:
+`upload_godvalley`/`upload_fiction`/`upload_philosophy`/`upload_mythology`. Every view is gated
+`@login_required` + `if not request.user.is_staff: raise Http404` (same pattern as
+`core.views.create_news`/`users_list` — anonymous visitors get redirected to login by
+`login_required`, logged-in non-staff visitors get a 404, not a 403). On successful submit, the view
+sets `category`/`author`/`is_published` itself (not exposed on any form) and redirects back to the
+*same* upload sub-page rather than the new content's public page, since repeated chapter entry is
+the expected workflow, not one-and-done.
+
+`/upload/`'s four cards are a bespoke design, not the generic `_archive_card.html` include used
+elsewhere — `upload.views.CARDS` centralizes each category's copy (`eyebrow`, `description`,
+singular/plural noun) and an `icon` slug that `upload_hub.html` matches against an `{% if/elif %}`
+chain to inline one hand-drawn SVG sigil per category (a radiant halo for The God Valley, a quill
+for Fiction, a Doric column for Philosophy, an ouroboros ring for Mythology) — matching the site's
+existing thin-stroke icon language rather than a stock photo, since this is an admin-only tool page,
+not visitor-facing content. `upload_hub` computes each category's live item count in one aggregated
+query (`Content.objects.values_list('category').annotate(...)`) rather than one query per card, and
+picks the correct singular/plural noun in Python (`noun_singular`/`noun_plural` on each `CARDS`
+entry) before handing the template a single `noun` string — needed because Django's `pluralize`
+filter can't handle irregular plurals like story/stories. Each card's eyebrow tag reads "Flagship"
+for The God Valley and "Writings" for the other three, mirroring the site's real content taxonomy
+(God Valley is a standalone top-level story; Fiction/Philosophy/Mythology are the three Writings
+sub-categories) rather than being decorative.
+
+**`Subcategory`** (`upload.models.Subcategory`) is the piece that's actually meant to be
+admin-extensible with zero code changes: which Fiction *story* a chapter belongs to, which
+Philosophy *topic*, or which Mythology *tradition* — `parent_category` (one of Fiction/Philosophy/
+Mythology; God Valley never uses it, it has exactly one implicit story) + `name`/`slug`, unique per
+`(parent_category, slug)`. `Content.subcategory` is a nullable `FK(Subcategory, on_delete=PROTECT)`
+— `PROTECT` is deliberate (not `CASCADE`), so a `Subcategory` can never be deleted while `Content`
+still references it. Each of the three Subcategory-driven upload forms
+(`upload.forms.SubcategoryUploadForm` and its Fiction/Philosophy/Mythology subclasses) lets the admin
+either pick an existing `Subcategory` from a dropdown *or* type a brand-new one directly into a
+`new_subcategory_name` field — `clean()` does a `get_or_create` on that name (slugified) under the
+form's fixed `parent_category` — so a new story/topic/tradition never requires touching Django admin
+or writing code, which is the whole point of the model existing. `Subcategory` is also registered in
+Django admin (`upload/admin.py`) for direct editing, same as `Content`/`News`.
+
+This replaced an earlier, narrower `Content.PhilosophyTopic` `TextChoices` field (hardcoded to just
+Epistemology/Political Philosophy) — that field's two enum values became the first two `Subcategory`
+rows via a data migration (`upload/migrations/0014_migrate_philosophy_topic.py`) before the old field
+was dropped, so no existing classification was lost in the switch. The Philosophy category-filter bar
+on `/writings/philosophy/` (`templates/writings_list.html`'s `.topic-filter`) now reads generically
+off `Subcategory` — `core.views.writings_category_list` filters `?topic=<slug>` against
+`Subcategory.objects.filter(parent_category=category)` — so the same filter bar mechanism works for
+any category that ends up with subcategories, not just Philosophy, without further code changes.
+
+### Editing and deleting existing content
+
+Each upload sub-page's "Already Uploaded" list (`templates/upload_form.html`) carries an edit and a
+delete icon per row (`.upload-existing-actions`), both admin-only. Editing opens a full, separate,
+centered page — `/upload/edit/<pk>/` (`upload.views.edit_content`, `templates/upload_edit.html`) —
+not an in-place modal; an AJAX modal-in-the-page approach was built and then deliberately reverted
+in favor of a real page, so this is a considered choice, not an oversight. `upload_edit.html` reuses
+the `.auth-page`/`.auth-card` centered-card layout already established for login/signup (with a
+wider `.auth-card-wide` modifier, since a chapter body textarea needs more than the login form's
+420px), and shows a `.meta` line below the heading with the item's title, chapter number (if any),
+category, and upload date — the same `.meta` convention `writings_detail.html` uses below its own
+`<h1>`. Saving redirects back to the category's upload page (`url_name`, resolved via
+`{% url url_name %}` off a context variable) rather than the edited item's public page, matching the
+create flow's "return to the workspace" convention above.
+
+`delete_content` (`upload/views.py`) mirrors `core.views.delete_news`'s gate exactly — staff-only,
+POST-only (`if not request.user.is_staff or request.method != 'POST': raise Http404`) — and
+redirects back to the item's own category page with a success message. The delete icon is a real
+`<form method="post">` (works with JS disabled) guarded by `data-confirm`, handled by the site-wide
+confirm modal (see **Site-wide confirm modal** below) rather than a raw link, so a staff member can
+never delete a chapter with a stray click. In the existing-items list, the category/subcategory tag
+now trails the title (`Ch. N — Title` then the tag) rather than leading it — `.upload-existing-tag`'s
+spacing was flipped from `margin-right` to `margin-left` to match.
 
 ### News: `upload.News`, created/edited via a modal, not Django admin
 
@@ -83,7 +168,8 @@ short dispatch instead of a long chapter.
 Each News card also carries a three-dot menu (Edit/Delete, `user.is_staff`-only) built from the
 **reusable card menu module** below — Edit reopens the same modal as "+ New" (pre-filled via the
 button's `data-*` attributes, form `action` swapped to `core.views.edit_news`), and Delete is a
-real `<form method="post">` to `core.views.delete_news` with a JS `confirm()` guard. Both views
+real `<form method="post">` to `core.views.delete_news` guarded by the site-wide confirm modal (see
+**Site-wide confirm modal** below). Both views
 follow the same `is_staff` + `Http404` gate as `create_news`. Since each card's whole body is
 clickable (see **stretched-link** below), the card itself is no longer an `<a>` — the title is now
 `<h3><a class="stretched-link">`, letting the three-dot menu sit as an independently-clickable
@@ -101,8 +187,28 @@ outside-click/Escape behavior lives in `card-menu.js` as a single **delegated** 
 `document` (registered once, site-wide, via `base.html` — not per-page `extra_js`), so it already
 works for any future `.card-menu` a page adds, including ones rendered after page load, with zero
 additional JS wiring — only the page-specific *actions* (like News's edit-modal trigger) need their
-own small handler. The delete confirmation (`window.confirm()` on `[data-confirm]`) is handled
-generically inside `card-menu.js` too, not duplicated per feature.
+own small handler. The delete confirmation on `[data-confirm]` is handled generically inside
+`card-menu.js` too, not duplicated per feature — see **Site-wide confirm modal** below for what that
+actually does now (it no longer calls `window.confirm()`).
+
+### Site-wide confirm modal: replaces `window.confirm()` for any `[data-confirm]` element
+
+Every destructive action gated by `data-confirm` (News delete via `_card_menu.html`, user deletion
+on `/users/`, and the Upload page's delete icon above) pops one shared, centered modal
+(`#confirm-modal`/`#confirm-modal-overlay`, declared once in `base.html` so it's present on every
+page) instead of the browser's native `window.confirm()` — a plain OS dialog looked out of place
+against the rest of the site's gold-on-ink design system. Its confirm button uses a new `.btn-danger`
+(red, `var(--danger)`) alongside the existing `.btn`/`.btn-outline` pair. The interception logic
+lives in `card-menu.js` (not a new file — it already owned the one delegated `[data-confirm]` click
+listener) and was deliberately widened from `.card-menu [data-confirm]` to a bare `[data-confirm]`
+selector, so it now catches *any* such element anywhere on the page, not just menu items inside a
+`.card-menu` dropdown. Confirming re-submits the button's parent `<form>` via `form.submit()` (which
+— unlike a synthetic click — skips the button's own click handler, so it can't re-trigger the
+prompt); cancelling, clicking the overlay, or Escape all just close it with no side effect.
+`static/js/users-list.js` used to run its own near-identical `window.confirm()` check on
+`.delete-user-form`'s `submit` event — that's now dead code eliminated outright, since the global
+click listener's `preventDefault()` fires first and stops the native submit before that listener
+would ever see it.
 
 ### Reusable "New" badge: `templates/_new_badge.html`
 
@@ -424,6 +530,39 @@ JS parallax effect without leaving content stuck at `opacity:0`) and has visible
 states site-wide. Hero sections are written inline per-template (`<section class="hero">...`)
 rather than via a shared include — an earlier `_hero.html` partial was deliberately deleted in
 favor of consistency with the pages that never used it.
+
+A single global background image sits behind every page — `static/images/bg-cosmos.jpg` (a
+black-hole/accretion-disk photo, converted from a much larger source PNG to a ~180KB JPEG via
+Pillow, already available transitively through `reportlab` per **Downloads** above), wired into the
+`body` rule in `static/css/style.css` rather than a template/DOM element, since a CSS
+`background-image` always paints behind an element's children automatically — no extra wrapper
+`<div>` or `z-index` bookkeeping needed against the navbar/drawer/modal layers already in
+`base.html`. It's layered under a heavy `rgba(5,5,5,0.87)` gradient so it reads as ambience, not
+decoration competing with body text — chapter/essay reading pages have no card behind their prose,
+so the darken pass had to be tuned against actual long-form content, not just the hero.
+`background-attachment:fixed` keeps it a single static backdrop instead of repeating per page; a
+`max-width:900px` media query swaps it to `scroll` on touch viewports, since fixed backgrounds are a
+known iOS Safari repaint quirk. Chosen deliberately over 3 other candidate space photos (a galaxy
+field and two colorful nebulae) specifically because it's chromatically already on-brand — almost
+entirely black with one gold/white focal ring — rather than introducing hues that would compete with
+the site's strict two-color `--gold`/`--bg-primary` palette.
+
+`.archive-grid`/`.archive-card` (used by home, Writings, God Valley chapters, News, Favourites,
+Reading List, Search, and the Upload hub) renders fixed-size square cards, not the flexible
+`minmax(320px, 1fr)` grid it started as — that `1fr` max let a lone card in a sparse category (e.g.
+an empty Fiction list with one new entry) stretch to fill the entire row into a wide rectangle.
+`grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 380px))` fixes the max at 380px so
+cards never grow past it, while the `min(380px, 100%)` half of the `minmax()` keeps the same rule
+from overflowing on phones narrower than 380px; `justify-content:center` centers whatever cards
+exist within a row — this specifically requires `auto-fit`, not `auto-fill`, since `auto-fill` keeps
+phantom empty tracks that silently defeat centering (a sparse row still measures as "full" for
+alignment purposes even though nothing renders in the empty tracks). Cards are `aspect-ratio:1/0.9`
+(a fixed square would be `1/1`; this is intentionally a little shorter) with title/excerpt text
+`-webkit-line-clamp`'d to 2/3 lines so overflowing text never breaks the fixed box — note
+`-webkit-line-clamp` silently stops working if the clamped element is a direct flex item, which is
+why `.archive-card` itself stays `display:block`, not `flex`, despite centering several children.
+The Upload hub cards (`.upload-hub-card`) override back to `aspect-ratio:1/1` since their icon +
+eyebrow + description + stat line need more vertical room than the plain list-style cards elsewhere.
 
 ## Divergences from Project-Scope.md
 

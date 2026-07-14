@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}{{ heading }} | DL Fantasy{% endblock %}
+{% block content %}
+
+<section class="hero hero-compact upload-hero">
+    <div class="hero-content parallax">
+        <h1>{{ heading }}</h1>
+    </div>
+</section>
+
+<section class="archive">
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-layout">
+        <div class="upload-form-col">
+            <form class="auth-form upload-form" method="post">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <p class="form-error">{{ form.non_field_errors|join:", " }}</p>
+                {% endif %}
+
+                {% for field in form %}
+                <div class="auth-field-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    <p class="form-error">{{ field.errors|join:", " }}</p>
+                </div>
+                {% endfor %}
+
+                <button type="submit" class="btn">Upload</button>
+            </form>
+        </div>
+
+        <div class="upload-list-col">
+            <h2 class="upload-list-heading">Already Uploaded</h2>
+            <ul class="upload-existing-list">
+                {% for item in existing_items %}
+                <li class="upload-existing-item">
+                    <a href="{{ item.get_absolute_url }}" class="upload-existing-link stretched-link">
+                        <span class="upload-existing-title">
+                            {% if item.chapter_number %}Ch. {{ item.chapter_number }} — {% endif %}{{ item.title }}
+                            {% if item.subcategory %}<span class="upload-existing-tag">{{ item.subcategory.name }}</span>{% endif %}
+                        </span>
+                        <span class="upload-existing-date">{{ item.created_at|date:"M j, Y" }}</span>
+                    </a>
+                    <div class="upload-existing-actions">
+                        <a href="{% url 'edit_content' item.pk %}" class="upload-existing-edit" aria-label="Edit {{ item.title }}">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-2.83l-1.17-1.17a2 2 0 0 0-2.83 0L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>
+                        </a>
+                        <form method="post" action="{% url 'delete_content' item.pk %}" class="upload-existing-delete-form">
+                            {% csrf_token %}
+                            <button
+                                type="submit"
+                                class="upload-existing-delete"
+                                aria-label="Delete {{ item.title }}"
+                                data-confirm="Delete &quot;{{ item.title }}&quot;? This can't be undone."
+                            >
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14"></path><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path><path d="M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                            </button>
+                        </form>
+                    </div>
+                </li>
+                {% empty %}
+                <p>Nothing uploaded yet.</p>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

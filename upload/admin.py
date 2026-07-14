@@ -1,15 +1,23 @@
 from django.contrib import admin
 
-from .models import Content, DownloadHistory, Favourite, News, ReadingHistory, ReadingListItem
+from .models import Content, DownloadHistory, Favourite, News, ReadingHistory, ReadingListItem, Subcategory
 
 
 @admin.register(Content)
 class ContentAdmin(admin.ModelAdmin):
-    list_display = ('title', 'category', 'chapter_number', 'is_published', 'created_at')
-    list_filter = ('category', 'is_published')
+    list_display = ('title', 'category', 'chapter_number', 'subcategory', 'is_published', 'created_at')
+    list_filter = ('category', 'subcategory', 'is_published')
     search_fields = ('title', 'excerpt', 'body')
     prepopulated_fields = {'slug': ('title',)}
     ordering = ('category', 'chapter_number', '-created_at')
+
+
+@admin.register(Subcategory)
+class SubcategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'parent_category', 'slug')
+    list_filter = ('parent_category',)
+    prepopulated_fields = {'slug': ('name',)}
+    ordering = ('parent_category', 'name')
 
 
 @admin.register(News)

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}{{ heading }} | DL Fantasy{% endblock %}
+{% block content %}
+
+<section class="hero hero-compact upload-hero">
+    <div class="hero-content parallax">
+        <h1>{{ heading }}</h1>
+        <p class="meta">
+            {{ content.title }}
+            {% if content.chapter_number %} · Chapter {{ content.chapter_number }}{% endif %}
+            {% if content.get_category_display %} · {{ content.get_category_display }}{% endif %}
+            · Uploaded {{ content.created_at|date:"F j, Y" }}
+        </p>
+    </div>
+</section>
+
+<div class="auth-page">
+    <div class="auth-card auth-card-wide">
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form class="auth-form upload-form" method="post">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+            <p class="form-error">{{ form.non_field_errors|join:", " }}</p>
+            {% endif %}
+
+            {% for field in form %}
+            <div class="auth-field-group">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                <p class="form-error">{{ field.errors|join:", " }}</p>
+            </div>
+            {% endfor %}
+
+            <div class="upload-edit-actions">
+                <a href="{% url url_name %}" class="btn-outline">Cancel</a>
+                <button type="submit" class="btn">Save Changes</button>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}

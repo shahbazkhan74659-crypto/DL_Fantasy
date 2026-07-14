@@ -44,16 +44,5 @@ if (editModal) {
     });
 }
 
-// DELETE CONFIRMATION
-
-document.querySelectorAll('.delete-user-form').forEach((form) => {
-
-    form.addEventListener('submit', (e) => {
-
-        const button = form.querySelector('[data-confirm]');
-
-        if (button && !window.confirm(button.dataset.confirm)) {
-            e.preventDefault();
-        }
-    });
-});
+// Delete confirmation for .delete-user-form is handled globally by card-menu.js's
+// [data-confirm] listener (site-wide custom modal instead of window.confirm()).

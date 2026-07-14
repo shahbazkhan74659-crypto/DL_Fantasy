@@ -25,6 +25,10 @@ class Content(models.Model):
         null=True, blank=True,
         help_text="God Valley chapter order. Leave blank for non-chapter content.",
     )
+    subcategory = models.ForeignKey(
+        'Subcategory', on_delete=models.PROTECT, null=True, blank=True, related_name='contents',
+        help_text="Which Fiction story / Philosophy topic / Mythology tradition. Not used for God Valley.",
+    )
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='contents',
@@ -42,10 +46,47 @@ class Content(models.Model):
             models.UniqueConstraint(fields=['category', 'slug'], name='unique_slug_per_category'),
         ]
 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.title)[:200] or self.category
+            slug = base
+            suffix = 1
+            while Content.objects.filter(category=self.category, slug=slug).exists():
+                suffix += 1
+                slug = f'{base}-{suffix}'[:220]
+            self.slug = slug
+        super().save(*args, **kwargs)
+
     def __str__(self):
         if self.category == self.Category.GODVALLEY and self.chapter_number:
             return f"Ch. {self.chapter_number} — {self.title}"
         return self.title
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        if self.category == self.Category.GODVALLEY:
+            return reverse('godvalley_detail', args=[self.slug])
+        return reverse('writings_detail', args=[self.category, self.slug])
+
+
+class Subcategory(models.Model):
+    """Admin-created sub-classification: which Fiction story, Philosophy topic, or Mythology
+    tradition a Content row belongs to. Created inline from the Upload forms (or Django admin) —
+    never hardcoded, so a new story/topic/tradition never needs a code change or migration. Not
+    used for God Valley, which has exactly one implicit story.
+    """
+    parent_category = models.CharField(max_length=20, choices=Content.Category.choices)
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100)
+
+    class Meta:
+        ordering = ['name']
+        constraints = [
+            models.UniqueConstraint(fields=['parent_category', 'slug'], name='unique_subcategory_slug_per_parent'),
+        ]
+
+    def __str__(self):
+        return f'{self.get_parent_category_display()} / {self.name}'
 
 
 class ReadingHistory(models.Model):

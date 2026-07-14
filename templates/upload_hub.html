@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}Upload | DL Fantasy{% endblock %}
+{% block content %}
+
+<section class="hero hero-compact">
+    <div class="hero-content parallax">
+        <span class="section-tag">Admin</span>
+        <h1>Upload</h1>
+        <p>Pick what you're adding.</p>
+    </div>
+</section>
+
+<section class="archive">
+    <div class="archive-grid">
+        {% for card in cards %}
+        <a href="{{ card.url }}" class="archive-card upload-hub-card">
+            <span class="upload-hub-eyebrow">{{ card.eyebrow }}</span>
+
+            <span class="upload-hub-icon-ring">
+                {% if card.icon == 'godvalley' %}
+                <svg viewBox="0 0 48 48" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="24" cy="24" r="10"></circle>
+                    <circle cx="24" cy="24" r="3" fill="currentColor" stroke="none"></circle>
+                    <path d="M24 4v6"></path>
+                    <path d="M24 38v6"></path>
+                    <path d="M4 24h6"></path>
+                    <path d="M38 24h6"></path>
+                    <path d="M9.8 9.8l4.2 4.2"></path>
+                    <path d="M34 34l4.2 4.2"></path>
+                    <path d="M38.2 9.8l-4.2 4.2"></path>
+                    <path d="M14 34l-4.2 4.2"></path>
+                </svg>
+                {% elif card.icon == 'fiction' %}
+                <svg viewBox="0 0 48 48" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M37 9c-9 1-18 7-22 20l-3 9 9-3C34 31 40 22 41 13"></path>
+                    <path d="M37 9c2 4 2 9-1 13"></path>
+                    <path d="M15 33l7-7"></path>
+                </svg>
+                {% elif card.icon == 'philosophy' %}
+                <svg viewBox="0 0 48 48" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 10h28"></path>
+                    <path d="M12 14h24"></path>
+                    <path d="M16 14v20"></path>
+                    <path d="M24 14v20"></path>
+                    <path d="M32 14v20"></path>
+                    <path d="M12 34h24"></path>
+                    <path d="M10 38h28"></path>
+                </svg>
+                {% elif card.icon == 'mythology' %}
+                <svg viewBox="0 0 48 48" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M33.7 16.9A13 13 0 1 0 33.7 31.1"></path>
+                    <path d="M33.7 16.9l6.7-2.6-1.1 7.1z" fill="currentColor" stroke="none"></path>
+                </svg>
+                {% endif %}
+            </span>
+
+            <h3>{{ card.label }}</h3>
+            <p class="upload-hub-desc">{{ card.description }}</p>
+
+            <span class="upload-hub-footer">
+                <span class="upload-hub-stat">{% if card.count %}{{ card.count }} {{ card.noun }}{% else %}Nothing uploaded yet{% endif %}</span>
+                <span class="upload-hub-dot">&middot;</span>
+                <span class="upload-hub-cta">Open Upload <span class="upload-hub-cta-arrow">&rarr;</span></span>
+            </span>
+        </a>
+        {% endfor %}
+    </div>
+</section>
+
+{% endblock %}

@@ -25,5 +25,6 @@ sitemaps = {'content': ContentSitemap, 'static': StaticViewSitemap}
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps}, name='django.contrib.sitemaps.views.sitemap'),
+    path('upload/', include('upload.urls')),
     path('', include('core.urls')),
 ]

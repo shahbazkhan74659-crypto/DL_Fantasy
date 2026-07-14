@@ -12,7 +12,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from upload.models import Content, DownloadHistory, Favourite, News, ReadingHistory, ReadingListItem
+from upload.models import Content, DownloadHistory, Favourite, News, ReadingHistory, ReadingListItem, Subcategory
 from users.models import DeletedUser, User, VisitSession
 
 from . import google_oauth
@@ -52,10 +52,21 @@ def writings_category_list(request, category):
     if category not in WRITINGS_CATEGORIES:
         raise Http404("Unknown writings category")
     entries = Content.objects.filter(category=category, is_published=True).order_by('-created_at')
+
+    subcategories = Subcategory.objects.filter(parent_category=category)
+    active_subcategory = None
+    requested = request.GET.get('topic', '')
+    if requested:
+        active_subcategory = subcategories.filter(slug=requested).first()
+        if active_subcategory:
+            entries = entries.filter(subcategory=active_subcategory)
+
     return render(request, 'writings_list.html', {
         'category': category,
         'category_label': Content.Category(category).label,
         'entries': _paginate(request, entries),
+        'subcategories': subcategories,
+        'active_topic': active_subcategory.slug if active_subcategory else '',
     })
 
 
