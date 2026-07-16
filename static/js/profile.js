@@ -7,17 +7,11 @@ const editProfileCloseBtn = document.querySelector('#edit-profile-close');
 const editProfileCancelBtn = document.querySelector('#edit-profile-cancel');
 
 function openEditProfileModal() {
-
-    editProfileOverlay.classList.add('is-open');
-    editProfileModal.classList.add('is-open');
-    editProfileModal.setAttribute('aria-hidden', 'false');
+    openModal(editProfileOverlay, editProfileModal);
 }
 
 function closeEditProfileModal() {
-
-    editProfileOverlay.classList.remove('is-open');
-    editProfileModal.classList.remove('is-open');
-    editProfileModal.setAttribute('aria-hidden', 'true');
+    closeModal(editProfileOverlay, editProfileModal);
 }
 
 if (editProfileModal) {

@@ -15,9 +15,7 @@ class ContentSitemap(Sitemap):
         return obj.updated_at
 
     def location(self, obj):
-        if obj.category == Content.Category.GODVALLEY:
-            return reverse('godvalley_detail', args=[obj.slug])
-        return reverse('writings_detail', args=[obj.category, obj.slug])
+        return obj.get_absolute_url()
 
 
 class StaticViewSitemap(Sitemap):

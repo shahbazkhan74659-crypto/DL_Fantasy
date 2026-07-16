@@ -1,5 +1,4 @@
 from django.contrib.syndication.views import Feed
-from django.urls import reverse
 
 from upload.models import Content
 
@@ -19,9 +18,7 @@ class LatestContentFeed(Feed):
         return item.excerpt or item.body[:300]
 
     def item_link(self, item):
-        if item.category == Content.Category.GODVALLEY:
-            return reverse('godvalley_detail', args=[item.slug])
-        return reverse('writings_detail', args=[item.category, item.slug])
+        return item.get_absolute_url()
 
     def item_pubdate(self, item):
         return item.created_at

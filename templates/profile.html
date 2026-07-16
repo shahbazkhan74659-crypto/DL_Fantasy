@@ -44,18 +44,9 @@
             {% if reading_history %}
             <div class="reading-history-list">
                 {% for item in reading_history %}
-                {% if item.content.category == 'godvalley' %}
-                {% url 'godvalley_detail' item.content.slug as history_url %}
-                {% else %}
-                {% url 'writings_detail' item.content.category item.content.slug as history_url %}
-                {% endif %}
-                <a href="{{ history_url }}" class="reading-history-item">
-                    <span class="reading-history-icon">{{ item.content.get_category_display|first }}</span>
-                    <span class="reading-history-meta">
-                        <span class="reading-history-title">{{ item.content.title }}</span>
-                        <span class="reading-history-sub">{{ item.content.get_category_display }} &middot; {{ item.viewed_at|timesince }} ago</span>
-                    </span>
-                </a>
+                {% with time_ago=item.viewed_at|timesince category=item.content.get_category_display %}
+                {% include '_reading_history_row.html' with history_url=item.content.get_absolute_url content=item.content sub_text=category|add:" · "|add:time_ago|add:" ago" %}
+                {% endwith %}
                 {% endfor %}
             </div>
             {% else %}

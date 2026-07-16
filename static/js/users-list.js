@@ -16,17 +16,11 @@ function openEditModal(button) {
     editEmailInput.value = button.dataset.email;
     editActiveInput.checked = button.dataset.active === '1';
 
-    editOverlay.classList.add('is-open');
-    editModal.classList.add('is-open');
-    editModal.setAttribute('aria-hidden', 'false');
-    editUsernameInput.focus();
+    openModal(editOverlay, editModal, editUsernameInput);
 }
 
 function closeEditModal() {
-
-    editOverlay.classList.remove('is-open');
-    editModal.classList.remove('is-open');
-    editModal.setAttribute('aria-hidden', 'true');
+    closeModal(editOverlay, editModal);
 }
 
 if (editModal) {

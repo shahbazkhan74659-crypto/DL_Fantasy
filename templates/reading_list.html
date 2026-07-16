@@ -11,12 +11,7 @@
 <section class="archive">
     <div class="archive-grid">
         {% for item in reading_list_items %}
-        {% if item.content.category == 'godvalley' %}
-        {% url 'godvalley_detail' item.content.slug as item_url %}
-        {% else %}
-        {% url 'writings_detail' item.content.category item.content.slug as item_url %}
-        {% endif %}
-        {% include '_archive_card.html' with url=item_url title_text=item.content.title meta_text=item.content.get_category_display body_text=item.content.excerpt cover_url=item.content.cover_url %}
+        {% include '_archive_card.html' with url=item.content.get_absolute_url title_text=item.content.title meta_text=item.content.get_category_display body_text=item.content.excerpt cover_url=item.content.cover_url %}
         {% empty %}
         <p>Your reading list is empty — tap the bookmark on any story or chapter to save it here.</p>
         {% endfor %}

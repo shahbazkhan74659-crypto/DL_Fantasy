@@ -15,14 +15,11 @@
 
     <div class="archive-grid">
         {% for chapter in chapters %}
-        <a class="archive-card concept-card show{% if chapter.cover_url %} has-cover{% endif %}" href="{% url 'godvalley_detail' chapter.slug %}">
-            {% if forloop.first and chapters.number == 1 %}{% include '_new_badge.html' %}{% endif %}
-            {% if chapter.cover_url %}<img class="archive-card-bg" src="{{ chapter.cover_url }}" alt="">{% endif %}
-            <div class="archive-card-body">
-                <h3>Ch. {{ chapter.chapter_number }} — {{ chapter.title }}</h3>
-                <p>{{ chapter.excerpt }}</p>
-            </div>
-        </a>
+        {% if forloop.first and chapters.number == 1 %}
+        {% include '_archive_card.html' with url=chapter.get_absolute_url title_text=chapter body_text=chapter.excerpt cover_url=chapter.cover_url show_new_badge=True %}
+        {% else %}
+        {% include '_archive_card.html' with url=chapter.get_absolute_url title_text=chapter body_text=chapter.excerpt cover_url=chapter.cover_url %}
+        {% endif %}
         {% empty %}
         <p>No chapters match your search.</p>
         {% endfor %}

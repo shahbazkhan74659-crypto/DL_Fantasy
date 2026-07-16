@@ -23,17 +23,11 @@ function openNewsModal({ action, title, tag, body, heading, submitLabel }) {
     newsModalTitle.textContent = heading;
     newsSubmitBtn.textContent = submitLabel;
 
-    newsOverlay.classList.add('is-open');
-    newsModal.classList.add('is-open');
-    newsModal.setAttribute('aria-hidden', 'false');
-    newsTitleInput.focus();
+    openModal(newsOverlay, newsModal, newsTitleInput);
 }
 
 function closeNewsModal() {
-
-    newsOverlay.classList.remove('is-open');
-    newsModal.classList.remove('is-open');
-    newsModal.setAttribute('aria-hidden', 'true');
+    closeModal(newsOverlay, newsModal);
 }
 
 if (newsModal) {

@@ -16,8 +16,7 @@
     <h2>Discover Something New</h2>
     <div class="spotlight-row" id="spotlight-grid">
         {% for entry in spotlight %}
-        {% if entry.category == 'godvalley' %}{% url 'godvalley_detail' entry.slug as entry_url %}{% else %}{% url 'writings_detail' entry.category entry.slug as entry_url %}{% endif %}
-        <a href="{{ entry_url }}" class="spotlight-item{% if entry.cover_url %} has-cover{% endif %}"{% if entry.cover_url %} style="background-image:url('{{ entry.cover_url }}')"{% endif %}><span>{{ entry.title }}</span></a>
+        <a href="{{ entry.get_absolute_url }}" class="spotlight-item{% if entry.cover_url %} has-cover{% endif %}"{% if entry.cover_url %} style="background-image:url('{{ entry.cover_url }}')"{% endif %}><span>{{ entry.title }}</span></a>
         {% empty %}
         <p>No entries yet — check back soon.</p>
         {% endfor %}
@@ -33,8 +32,7 @@
     <h2>Explore</h2>
     <div class="archive-grid">
         {% for entry in entries %}
-        {% if entry.category == 'godvalley' %}{% url 'godvalley_detail' entry.slug as entry_url %}{% else %}{% url 'writings_detail' entry.category entry.slug as entry_url %}{% endif %}
-        {% include '_archive_card.html' with url=entry_url title_text=entry.title meta_text=entry.created_at|date:"F j, Y" body_text=entry.excerpt cover_url=entry.cover_url %}
+        {% include '_archive_card.html' with url=entry.get_absolute_url title_text=entry.title meta_text=entry.created_at|date:"F j, Y" body_text=entry.excerpt cover_url=entry.cover_url %}
         {% empty %}
         <p>No entries yet — check back soon.</p>
         {% endfor %}

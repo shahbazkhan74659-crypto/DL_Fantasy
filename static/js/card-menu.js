@@ -21,6 +21,29 @@
 // event on the button, so this doesn't re-trigger our own delegated click listener below either
 // way.
 
+// GENERIC MODAL OPEN/CLOSE — shared by the confirm modal below and by any page-specific modal
+// (profile.js, users-list.js, news.js). Site-wide since card-menu.js already loads on every page
+// ahead of any per-page `extra_js` script, so these two functions are available as plain globals
+// wherever a page needs its own overlay/modal pair opened or closed — only the feature-specific
+// field-population logic (which fields to fill, which button to focus) stays local to each page's
+// own script.
+
+function openModal(overlay, modal, focusEl) {
+
+    overlay.classList.add('is-open');
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+
+    if (focusEl) focusEl.focus();
+}
+
+function closeModal(overlay, modal) {
+
+    overlay.classList.remove('is-open');
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
 function closeAllCardMenus(except) {
 
     document.querySelectorAll('.card-menu.is-open').forEach((menu) => {
@@ -49,9 +72,7 @@ function openConfirmModal(message, form, submitter) {
     pendingConfirmSubmitter = submitter;
     confirmMessage.textContent = message;
 
-    confirmOverlay.classList.add('is-open');
-    confirmModal.classList.add('is-open');
-    confirmModal.setAttribute('aria-hidden', 'false');
+    openModal(confirmOverlay, confirmModal);
 }
 
 function closeConfirmModal() {
@@ -59,9 +80,7 @@ function closeConfirmModal() {
     pendingConfirmForm = null;
     pendingConfirmSubmitter = null;
 
-    confirmOverlay.classList.remove('is-open');
-    confirmModal.classList.remove('is-open');
-    confirmModal.setAttribute('aria-hidden', 'true');
+    closeModal(confirmOverlay, confirmModal);
 }
 
 if (confirmModal) {

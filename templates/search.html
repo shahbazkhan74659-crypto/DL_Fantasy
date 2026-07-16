@@ -15,8 +15,7 @@
 
     <div class="archive-grid">
         {% for entry in results %}
-        {% if entry.category == 'godvalley' %}{% url 'godvalley_detail' entry.slug as entry_url %}{% else %}{% url 'writings_detail' entry.category entry.slug as entry_url %}{% endif %}
-        {% include '_archive_card.html' with url=entry_url title_text=entry.title meta_text=entry.get_category_display body_text=entry.excerpt cover_url=entry.cover_url %}
+        {% include '_archive_card.html' with url=entry.get_absolute_url title_text=entry.title meta_text=entry.get_category_display body_text=entry.excerpt cover_url=entry.cover_url %}
         {% empty %}
         {% if query %}
         <p>No results for "{{ query }}".</p>

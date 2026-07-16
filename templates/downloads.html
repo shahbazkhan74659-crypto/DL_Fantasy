@@ -12,19 +12,9 @@
     {% if download_history %}
     <div class="reading-history-list">
         {% for item in download_history %}
-        {% if item.content.category == 'godvalley' %}
-        {% url 'godvalley_detail' item.content.slug as history_url %}
-        {% else %}
-        {% url 'writings_detail' item.content.category item.content.slug as history_url %}
-        {% endif %}
+        {% with time_ago=item.downloaded_at|timesince category=item.content.get_category_display %}
         <div class="download-row">
-            <a href="{{ history_url }}" class="reading-history-item">
-                <span class="reading-history-icon">{{ item.content.get_category_display|first }}</span>
-                <span class="reading-history-meta">
-                    <span class="reading-history-title">{{ item.content.title }}</span>
-                    <span class="reading-history-sub">{{ item.content.get_category_display }} &middot; downloaded {{ item.downloaded_at|timesince }} ago</span>
-                </span>
-            </a>
+            {% include '_reading_history_row.html' with history_url=item.content.get_absolute_url content=item.content sub_text=category|add:" · downloaded "|add:time_ago|add:" ago" %}
             <form method="post" action="{% url 'download_content' item.content.id %}" class="download-form">
                 {% csrf_token %}
                 <button type="submit" class="icon-btn download-btn" aria-label="Download again">
@@ -32,6 +22,7 @@
                 </button>
             </form>
         </div>
+        {% endwith %}
         {% endfor %}
     </div>
     {% include '_pagination.html' with page_obj=download_history %}

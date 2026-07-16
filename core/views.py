@@ -35,12 +35,6 @@ def _paginate(request, queryset):
 SPOTLIGHT_SIZE = 6
 
 
-def _content_url(entry):
-    if entry.category == Content.Category.GODVALLEY:
-        return reverse('godvalley_detail', args=[entry.slug])
-    return reverse('writings_detail', args=[entry.category, entry.slug])
-
-
 def home(request):
     entries = Content.objects.filter(is_published=True).order_by('-created_at')
     spotlight = Content.objects.filter(is_published=True).order_by('?')[:SPOTLIGHT_SIZE]
@@ -51,7 +45,7 @@ def shuffle_spotlight(request):
     entries = Content.objects.filter(is_published=True).order_by('?')[:SPOTLIGHT_SIZE]
     return JsonResponse({
         'items': [
-            {'url': _content_url(entry), 'title': entry.title, 'cover_url': entry.cover_url}
+            {'url': entry.get_absolute_url(), 'title': entry.title, 'cover_url': entry.cover_url}
             for entry in entries
         ],
     })
