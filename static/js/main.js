@@ -2,8 +2,7 @@
 
 window.addEventListener("scroll", () => {
 
-    const navbar =
-    document.querySelector(".navbar");
+    const navbar = document.querySelector(".navbar");
 
     if(window.scrollY > 50){
 
@@ -23,15 +22,15 @@ window.addEventListener("scroll", () => {
 // at script-load time would go stale for cards/parallax elements that arrive
 // after that swap, so this gets called again post-swap via window.initPageEffects().
 
+const pageContent = document.querySelector(".page-content");
+
 function initPageEffects() {
 
     // SCROLL REVEAL ANIMATION
 
-    const cards =
-    document.querySelectorAll(".archive-card");
+    const cards = document.querySelectorAll(".archive-card");
 
-    const observer =
-    new IntersectionObserver((entries) => {
+    const observer = new IntersectionObserver((entries) => {
 
         entries.forEach((entry) => {
 
@@ -57,14 +56,11 @@ function initPageEffects() {
 
         card.addEventListener("mousemove", (e) => {
 
-            const rect =
-            card.getBoundingClientRect();
+            const rect = card.getBoundingClientRect();
 
-            const x =
-            e.clientX - rect.left;
+            const x = e.clientX - rect.left;
 
-            const y =
-            e.clientY - rect.top;
+            const y = e.clientY - rect.top;
 
             card.style.setProperty(
                 "--x",
@@ -81,11 +77,9 @@ function initPageEffects() {
 
     // PARALLAX HERO EFFECT
 
-    const parallaxElements =
-    document.querySelectorAll(".parallax");
+    const parallaxElements = document.querySelectorAll(".parallax");
 
-    const prefersReducedMotion =
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if(!prefersReducedMotion){
 
@@ -94,18 +88,53 @@ function initPageEffects() {
 
     // ACTIVE NAVBAR LINK
 
-    const currentPath =
-    window.location.pathname;
+    const currentPath = window.location.pathname;
 
-    const navItems =
-    document.querySelectorAll(".nav-item");
+    const navItems = document.querySelectorAll(".nav-item");
 
     navItems.forEach((item) => {
 
-        const itemPath =
-        item.getAttribute("href");
+        const itemPath = item.getAttribute("href");
 
         item.classList.toggle("active", currentPath === itemPath);
+
+    });
+
+    // CONTENT TRANSITION EFFECT
+
+    const links = document.querySelectorAll("a");
+
+    links.forEach((link) => {
+
+        // Skip topic-filter chips, pagination links, and in-page search boxes —
+        // list-filters.js handles those itself via a delegated listener, swapping
+        // main.page-content in place instead of doing a full page navigation.
+        if(link.closest(".topic-filter, .pagination")){
+
+            return;
+        }
+
+        link.addEventListener("click", (e) => {
+
+            const href = link.getAttribute("href");
+
+            if(
+                href &&
+                !href.startsWith("#") &&
+                !href.startsWith("javascript")
+            ){
+
+                e.preventDefault();
+
+                pageContent.classList.add("fade-out");
+
+                setTimeout(() => {
+
+                    window.location.href = href;
+
+                }, 400);
+            }
+        });
 
     });
 
@@ -113,20 +142,17 @@ function initPageEffects() {
 
 const parallaxHeroEffect = { elements: [] };
 
-const prefersReducedMotionGlobal =
-window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const prefersReducedMotionGlobal = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 if(!prefersReducedMotionGlobal){
 
     window.addEventListener("scroll", () => {
 
-        const scrollY =
-        window.scrollY;
+        const scrollY = window.scrollY;
 
         parallaxHeroEffect.elements.forEach((element) => {
 
-            element.style.transform =
-            `translateY(${scrollY * 0.2}px)`;
+            element.style.transform = `translateY(${scrollY * 0.2}px)`;
 
         });
 
@@ -141,62 +167,13 @@ window.initPageEffects = initPageEffects;
 
 window.addEventListener("scroll", () => {
 
-    const scrollTop =
-        document.documentElement.scrollTop;
+    const scrollTop = document.documentElement.scrollTop;
 
-    const scrollHeight =
-        document.documentElement.scrollHeight -
-        document.documentElement.clientHeight;
+    const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
 
-    const scrollPercent =
-        (scrollTop / scrollHeight) * 100;
+    const scrollPercent = (scrollTop / scrollHeight) * 100;
 
-    document.querySelector(".progress-bar")
-        .style.width =
-        `${scrollPercent}%`;
-});
-
-// CONTENT TRANSITION EFFECT
-
-const pageContent =
-document.querySelector(".page-content");
-
-const links =
-document.querySelectorAll("a");
-
-links.forEach((link) => {
-
-    // Skip topic-filter chips, pagination links, and in-page search boxes —
-    // list-filters.js handles those itself via a delegated listener, swapping
-    // main.page-content in place instead of doing a full page navigation.
-    if(link.closest(".topic-filter, .pagination")){
-
-        return;
-    }
-
-    link.addEventListener("click", (e) => {
-
-        const href =
-        link.getAttribute("href");
-
-        if(
-            href &&
-            !href.startsWith("#") &&
-            !href.startsWith("javascript")
-        ){
-
-            e.preventDefault();
-
-            pageContent.classList.add("fade-out");
-
-            setTimeout(() => {
-
-                window.location.href = href;
-
-            }, 400);
-        }
-    });
-
+    document.querySelector(".progress-bar").style.width = `${scrollPercent}%`;
 });
 
 // RESET FADE-OUT ON BACK/FORWARD NAVIGATION
@@ -210,22 +187,19 @@ window.addEventListener("pageshow", () => {
 
 // PROFILE ICON FLOAT EFFECT
 
-const profileCircle =
-document.querySelector(".profile-circle");
+const profileCircle = document.querySelector(".profile-circle");
 
 if(profileCircle){
 
     profileCircle.addEventListener("mouseenter", () => {
 
-        profileCircle.style.transform =
-        "translateY(-3px) scale(1.08)";
+        profileCircle.style.transform = "translateY(-3px) scale(1.08)";
 
     });
 
     profileCircle.addEventListener("mouseleave", () => {
 
-        profileCircle.style.transform =
-        "translateY(0px) scale(1)";
+        profileCircle.style.transform = "translateY(0px) scale(1)";
 
     });
 
@@ -233,17 +207,13 @@ if(profileCircle){
 
 // SIDE DRAWER MENU
 
-const menuToggle =
-document.querySelector(".menu-toggle");
+const menuToggle = document.querySelector(".menu-toggle");
 
-const sideDrawer =
-document.querySelector("#side-drawer");
+const sideDrawer = document.querySelector("#side-drawer");
 
-const drawerOverlay =
-document.querySelector("#drawer-overlay");
+const drawerOverlay = document.querySelector("#drawer-overlay");
 
-const drawerClose =
-document.querySelector(".drawer-close");
+const drawerClose = document.querySelector(".drawer-close");
 
 if(menuToggle && sideDrawer && drawerOverlay){
 
@@ -300,15 +270,13 @@ if(menuToggle && sideDrawer && drawerOverlay){
 
 // LIVE CLOCK
 
-const clockEl =
-document.querySelector("#clock");
+const clockEl = document.querySelector("#clock");
 
 if(clockEl){
 
     const updateClock = () => {
 
-        clockEl.textContent =
-        new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+        clockEl.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 
     };
 
@@ -316,4 +284,3 @@ if(clockEl){
     setInterval(updateClock, 1000);
 
 }
-

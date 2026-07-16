@@ -15,8 +15,7 @@ const SEARCH_FORM_SELECTOR = "form.search-box";
 
 function softNavigate(url, push) {
 
-    const pageContent =
-    document.querySelector(".page-content");
+    const pageContent = document.querySelector(".page-content");
 
     if(!pageContent){
 
@@ -45,11 +44,9 @@ function softNavigate(url, push) {
             })
             .then(([html, finalUrl]) => {
 
-                const doc =
-                new DOMParser().parseFromString(html, "text/html");
+                const doc = new DOMParser().parseFromString(html, "text/html");
 
-                const newMain =
-                doc.querySelector("main.page-content");
+                const newMain = doc.querySelector("main.page-content");
 
                 if(!newMain){
 
@@ -86,13 +83,11 @@ function softNavigate(url, push) {
 
 document.addEventListener("click", (e) => {
 
-    const link =
-    e.target.closest(FILTER_LINK_SELECTOR);
+    const link = e.target.closest(FILTER_LINK_SELECTOR);
 
     if(!link) return;
 
-    const href =
-    link.getAttribute("href");
+    const href = link.getAttribute("href");
 
     if(!href) return;
 
@@ -104,18 +99,15 @@ document.addEventListener("click", (e) => {
 
 document.addEventListener("submit", (e) => {
 
-    const form =
-    e.target.closest(SEARCH_FORM_SELECTOR);
+    const form = e.target.closest(SEARCH_FORM_SELECTOR);
 
     if(!form) return;
 
     e.preventDefault();
 
-    const params =
-    new URLSearchParams(new FormData(form));
+    const params = new URLSearchParams(new FormData(form));
 
-    const url =
-    `${form.getAttribute("action")}?${params.toString()}`;
+    const url = `${form.getAttribute("action")}?${params.toString()}`;
 
     softNavigate(url, true);
 

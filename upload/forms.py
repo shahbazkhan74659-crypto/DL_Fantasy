@@ -23,6 +23,10 @@ class GodValleyUploadForm(forms.ModelForm):
             'cover_image': forms.FileInput(attrs=FIELD_ATTRS),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['chapter_number'].required = True
+
 
 class SubcategoryUploadForm(forms.ModelForm):
     """Base for Fiction/Philosophy/Mythology upload forms — each locks `subcategory`'s queryset to
