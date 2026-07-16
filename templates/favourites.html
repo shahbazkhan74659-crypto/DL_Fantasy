@@ -17,9 +17,9 @@
         {% url 'writings_detail' favourite.content.category favourite.content.slug as favourite_url %}
         {% endif %}
         {% if forloop.first and favourites.number == 1 %}
-        {% include '_archive_card.html' with url=favourite_url title_text=favourite.content.title meta_text=favourite.content.get_category_display body_text=favourite.content.excerpt show_new_badge=True %}
+        {% include '_archive_card.html' with url=favourite_url title_text=favourite.content.title meta_text=favourite.content.get_category_display body_text=favourite.content.excerpt cover_url=favourite.content.cover_url show_new_badge=True %}
         {% else %}
-        {% include '_archive_card.html' with url=favourite_url title_text=favourite.content.title meta_text=favourite.content.get_category_display body_text=favourite.content.excerpt %}
+        {% include '_archive_card.html' with url=favourite_url title_text=favourite.content.title meta_text=favourite.content.get_category_display body_text=favourite.content.excerpt cover_url=favourite.content.cover_url %}
         {% endif %}
         {% empty %}
         <p>No favourites yet — tap the heart on any story or chapter to add it here.</p>

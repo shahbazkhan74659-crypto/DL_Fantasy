@@ -11,12 +11,16 @@ SELECT_ATTRS = {'class': 'auth-field'}
 class GodValleyUploadForm(forms.ModelForm):
     class Meta:
         model = Content
-        fields = ('chapter_number', 'title', 'body')
-        labels = {'chapter_number': 'Chapter Number', 'title': 'Chapter Title', 'body': 'Chapter Body'}
+        fields = ('chapter_number', 'title', 'body', 'cover_image')
+        labels = {
+            'chapter_number': 'Chapter Number', 'title': 'Chapter Title', 'body': 'Chapter Body',
+            'cover_image': 'Cover Image',
+        }
         widgets = {
             'chapter_number': forms.NumberInput(attrs=FIELD_ATTRS),
             'title': forms.TextInput(attrs=FIELD_ATTRS),
             'body': forms.Textarea(attrs=BODY_ATTRS),
+            'cover_image': forms.FileInput(attrs=FIELD_ATTRS),
         }
 
 
@@ -36,11 +40,13 @@ class SubcategoryUploadForm(forms.ModelForm):
 
     class Meta:
         model = Content
-        fields = ('subcategory', 'title', 'body')
+        fields = ('subcategory', 'title', 'body', 'cover_image')
+        labels = {'cover_image': 'Cover Image'}
         widgets = {
             'subcategory': forms.Select(attrs=SELECT_ATTRS),
             'title': forms.TextInput(attrs=FIELD_ATTRS),
             'body': forms.Textarea(attrs=BODY_ATTRS),
+            'cover_image': forms.FileInput(attrs=FIELD_ATTRS),
         }
 
     def __init__(self, *args, **kwargs):
@@ -78,7 +84,7 @@ class FictionUploadForm(SubcategoryUploadForm):
     title_label = 'Chapter Name'
 
     class Meta(SubcategoryUploadForm.Meta):
-        fields = ('subcategory', 'chapter_number', 'title', 'body')
+        fields = ('subcategory', 'chapter_number', 'title', 'body', 'cover_image')
         widgets = {**SubcategoryUploadForm.Meta.widgets, 'chapter_number': forms.NumberInput(attrs=FIELD_ATTRS)}
 
 

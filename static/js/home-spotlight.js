@@ -26,8 +26,12 @@ document.addEventListener('click', (e) => {
 
             data.items.forEach((item) => {
                 const card = document.createElement('a');
-                card.className = 'spotlight-item';
+                card.className = 'spotlight-item' + (item.cover_url ? ' has-cover' : '');
                 card.href = item.url;
+
+                if (item.cover_url) {
+                    card.style.backgroundImage = `url('${item.cover_url}')`;
+                }
 
                 const title = document.createElement('span');
                 title.textContent = item.title;

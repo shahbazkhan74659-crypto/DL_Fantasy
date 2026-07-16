@@ -10,4 +10,5 @@ urlpatterns = [
     path('mythology/', views.upload_mythology, name='upload_mythology'),
     path('edit/<int:pk>/', views.edit_content, name='edit_content'),
     path('delete/<int:pk>/', views.delete_content, name='delete_content'),
+    path('delete-cover/<int:pk>/', views.delete_content_cover, name='delete_content_cover'),
 ]

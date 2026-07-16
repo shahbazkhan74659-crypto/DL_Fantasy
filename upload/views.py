@@ -72,7 +72,7 @@ def upload_hub(request):
 def _handle_upload(request, form_class, category, heading, url_name):
     _staff_only(request)
     if request.method == 'POST':
-        form = form_class(request.POST)
+        form = form_class(request.POST, request.FILES)
         if form.is_valid():
             content = form.save(commit=False)
             content.category = category
@@ -113,7 +113,7 @@ def edit_content(request, pk):
     form_class = FORM_CLASSES[content.category]
     url_name = URL_NAMES[content.category]
     if request.method == 'POST':
-        form = form_class(request.POST, instance=content)
+        form = form_class(request.POST, request.FILES, instance=content)
         if form.is_valid():
             form.save()
             messages.success(request, f'"{content.title}" was updated.')
@@ -136,3 +136,14 @@ def delete_content(request, pk):
     content.delete()
     messages.success(request, f'"{title}" was deleted.')
     return redirect(url_name)
+
+
+@login_required
+def delete_content_cover(request, pk):
+    if not request.user.is_staff or request.method != 'POST':
+        raise Http404
+    content = get_object_or_404(Content, pk=pk)
+    if content.cover_image:
+        content.cover_image.delete(save=True)
+        messages.success(request, 'Cover image was deleted.')
+    return redirect('edit_content', pk=pk)

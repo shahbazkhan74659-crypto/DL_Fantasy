@@ -4,3 +4,4 @@ python-dotenv==1.2.2
 google-auth==2.55.2
 requests==2.34.2
 reportlab==5.0.0
+Pillow==12.3.0

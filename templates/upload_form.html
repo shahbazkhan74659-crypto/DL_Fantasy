@@ -19,7 +19,7 @@
 
     <div class="upload-layout">
         <div class="upload-form-col">
-            <form class="auth-form upload-form" method="post">
+            <form class="auth-form upload-form" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}

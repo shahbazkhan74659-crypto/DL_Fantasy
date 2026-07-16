@@ -70,11 +70,12 @@ class UserEditForm(forms.ModelForm):
 
 
 class NewsForm(forms.ModelForm):
-    """Backs the 'New' modal on the admin-only News page. Only title/tag/body are user-supplied —
-    the slug is generated in News.save() and created_at is auto_now_add, so there's no date input."""
+    """Backs the 'New' modal on the admin-only News page. Only title/tag/body/cover_image are
+    user-supplied — the slug is generated in News.save() and created_at is auto_now_add, so
+    there's no date input."""
     class Meta:
         model = News
-        fields = ('title', 'tag', 'body')
+        fields = ('title', 'tag', 'body', 'cover_image')
 
 
 class ProfileForm(forms.ModelForm):

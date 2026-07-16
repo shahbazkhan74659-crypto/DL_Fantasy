@@ -26,16 +26,19 @@
 
     <div class="archive-grid">
         {% for item in items %}
-        <article class="archive-card show">
+        <article class="archive-card show{% if item.cover_url %} has-cover{% endif %}">
             {% if forloop.first %}{% include '_new_badge.html' %}{% endif %}
             {% if user.is_staff %}
             <div class="card-menu-wrap">
                 {% include '_card_menu.html' with actions=item.menu_actions %}
             </div>
             {% endif %}
-            <p class="meta">{{ item.created_at|date:"F Y" }} · {{ item.get_tag_display }}</p>
-            <h3><a href="{% url 'news_detail' item.slug %}" class="stretched-link">{{ item.title }}</a></h3>
-            <p>{{ item.body|truncatewords:20 }}</p>
+            {% if item.cover_url %}<img class="archive-card-bg" src="{{ item.cover_url }}" alt="">{% endif %}
+            <div class="archive-card-body">
+                <p class="meta">{{ item.created_at|date:"F Y" }} · {{ item.get_tag_display }}</p>
+                <h3><a href="{% url 'news_detail' item.slug %}" class="stretched-link">{{ item.title }}</a></h3>
+                <p>{{ item.body|truncatewords:20 }}</p>
+            </div>
         </article>
         {% endfor %}
     </div>
@@ -49,7 +52,7 @@
         <h2 id="news-modal-title">New Dispatch</h2>
         <button type="button" class="drawer-close" id="news-modal-close" aria-label="Close">&times;</button>
     </div>
-    <form method="post" action="" id="news-form" class="auth-form">
+    <form method="post" action="" id="news-form" class="auth-form" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="auth-field-group">
             <label for="news-title">Title</label>
@@ -67,7 +70,11 @@
             <label for="news-body">Content</label>
             <textarea name="body" id="news-body" class="auth-field" rows="6" required></textarea>
         </div>
-        <p class="chart-caption">Date is filled in automatically when you publish.</p>
+        <div class="auth-field-group">
+            <label for="news-cover-image">Cover Image</label>
+            <input type="file" name="cover_image" id="news-cover-image" class="auth-field" accept="image/*">
+        </div>
+        <p class="chart-caption">Date is filled in automatically when you publish. When editing, leave the cover image blank to keep the current one.</p>
         <div class="modal-actions">
             <button type="button" class="btn-outline" id="news-modal-cancel">Cancel</button>
             <button type="submit" class="btn" id="news-submit-btn">Publish</button>

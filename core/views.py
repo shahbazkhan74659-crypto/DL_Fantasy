@@ -51,7 +51,7 @@ def shuffle_spotlight(request):
     entries = Content.objects.filter(is_published=True).order_by('?')[:SPOTLIGHT_SIZE]
     return JsonResponse({
         'items': [
-            {'url': _content_url(entry), 'title': entry.title}
+            {'url': _content_url(entry), 'title': entry.title, 'cover_url': entry.cover_url}
             for entry in entries
         ],
     })
@@ -119,6 +119,7 @@ def writings_detail(request, category, slug):
         'entry': entry,
         'is_favourited': _is_favourited(request, entry),
         'is_in_reading_list': _is_in_reading_list(request, entry),
+        'page_cover_url': entry.cover_url,
     })
 
 
@@ -160,6 +161,7 @@ def godvalley_detail(request, slug):
         'next_chapter': next_chapter,
         'is_favourited': _is_favourited(request, chapter),
         'is_in_reading_list': _is_in_reading_list(request, chapter),
+        'page_cover_url': chapter.cover_url,
     })
 
 
@@ -289,7 +291,7 @@ def create_news(request):
     if not request.user.is_staff:
         raise Http404
     if request.method == 'POST':
-        form = NewsForm(request.POST)
+        form = NewsForm(request.POST, request.FILES)
         if form.is_valid():
             item = form.save()
             messages.success(request, f'"{item.title}" was published.')
@@ -305,7 +307,7 @@ def edit_news(request, slug):
         raise Http404
     item = get_object_or_404(News, slug=slug)
     if request.method == 'POST':
-        form = NewsForm(request.POST, instance=item)
+        form = NewsForm(request.POST, request.FILES, instance=item)
         if form.is_valid():
             form.save()
             messages.success(request, f'"{item.title}" was updated.')

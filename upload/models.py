@@ -29,6 +29,7 @@ class Content(models.Model):
         'Subcategory', on_delete=models.PROTECT, null=True, blank=True, related_name='contents',
         help_text="Which Fiction story / Philosophy topic / Mythology tradition. Not used for God Valley.",
     )
+    cover_image = models.ImageField(upload_to='covers/content/%Y/%m/', blank=True, null=True)
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='contents',
@@ -61,6 +62,10 @@ class Content(models.Model):
         if self.category == self.Category.GODVALLEY and self.chapter_number:
             return f"Ch. {self.chapter_number} — {self.title}"
         return self.title
+
+    @property
+    def cover_url(self):
+        return self.cover_image.url if self.cover_image else ''
 
     def get_absolute_url(self):
         from django.urls import reverse
@@ -198,6 +203,7 @@ class News(models.Model):
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     tag = models.CharField(max_length=20, choices=Tag.choices, default=Tag.NEWS)
     body = models.TextField()
+    cover_image = models.ImageField(upload_to='covers/news/%Y/%m/', blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -217,3 +223,7 @@ class News(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def cover_url(self):
+        return self.cover_image.url if self.cover_image else ''

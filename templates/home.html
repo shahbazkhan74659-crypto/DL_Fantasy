@@ -17,14 +17,14 @@
     <div class="spotlight-row" id="spotlight-grid">
         {% for entry in spotlight %}
         {% if entry.category == 'godvalley' %}{% url 'godvalley_detail' entry.slug as entry_url %}{% else %}{% url 'writings_detail' entry.category entry.slug as entry_url %}{% endif %}
-        <a href="{{ entry_url }}" class="spotlight-item"><span>{{ entry.title }}</span></a>
+        <a href="{{ entry_url }}" class="spotlight-item{% if entry.cover_url %} has-cover{% endif %}"{% if entry.cover_url %} style="background-image:url('{{ entry.cover_url }}')"{% endif %}><span>{{ entry.title }}</span></a>
         {% empty %}
         <p>No entries yet — check back soon.</p>
         {% endfor %}
     </div>
     {% if spotlight %}
     <div class="home-spotlight-actions">
-        <button type="button" id="spotlight-shuffle-btn" class="btn-outline" data-shuffle-url="{% url 'shuffle_spotlight' %}">Shuffle</button>
+        <button type="button" id="spotlight-shuffle-btn" class="btn-outline" data-shuffle-url="{% url 'shuffle_spotlight' %}">Refresh</button>
     </div>
     {% endif %}
 </section>
@@ -34,7 +34,7 @@
     <div class="archive-grid">
         {% for entry in recent %}
         {% if entry.category == 'godvalley' %}{% url 'godvalley_detail' entry.slug as entry_url %}{% else %}{% url 'writings_detail' entry.category entry.slug as entry_url %}{% endif %}
-        {% include '_archive_card.html' with url=entry_url title_text=entry.title body_text=entry.excerpt %}
+        {% include '_archive_card.html' with url=entry_url title_text=entry.title body_text=entry.excerpt cover_url=entry.cover_url %}
         {% empty %}
         <p>No entries yet — check back soon.</p>
         {% endfor %}

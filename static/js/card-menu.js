@@ -10,9 +10,16 @@
 // list, which isn't a dropdown menu at all). It pops the site-wide modal declared once in
 // base.html rather than the browser's native window.confirm(), so the prompt matches the rest of
 // the site's design instead of looking like an OS dialog. The element carrying [data-confirm] is
-// expected to be a submit button inside a <form> — confirming re-submits that same form
-// programmatically (form.submit(), which skips the button's own click handler, so this doesn't
-// re-trigger the confirm prompt).
+// expected to be a submit button inside a <form> — confirming re-submits via
+// form.requestSubmit(button), not form.submit(): some [data-confirm] buttons (e.g. the cover-image
+// delete button on the upload edit page) are a plain submit button with its own
+// formaction/formmethod inside the page's main <form>, rather than a separate nested <form> of
+// their own (nested <form> elements are invalid HTML and get silently flattened into the outer
+// form by the browser's parser). form.submit() always ignores a submitter's formaction/formmethod
+// override and just posts to the form's own default action; requestSubmit(button) submits exactly
+// as if that button had been clicked, honoring its override. Neither method dispatches a 'click'
+// event on the button, so this doesn't re-trigger our own delegated click listener below either
+// way.
 
 function closeAllCardMenus(except) {
 
@@ -34,10 +41,12 @@ const confirmOkBtn = document.querySelector('#confirm-modal-ok');
 const confirmCancelBtn = document.querySelector('#confirm-modal-cancel');
 
 let pendingConfirmForm = null;
+let pendingConfirmSubmitter = null;
 
-function openConfirmModal(message, form) {
+function openConfirmModal(message, form, submitter) {
 
     pendingConfirmForm = form;
+    pendingConfirmSubmitter = submitter;
     confirmMessage.textContent = message;
 
     confirmOverlay.classList.add('is-open');
@@ -48,6 +57,7 @@ function openConfirmModal(message, form) {
 function closeConfirmModal() {
 
     pendingConfirmForm = null;
+    pendingConfirmSubmitter = null;
 
     confirmOverlay.classList.remove('is-open');
     confirmModal.classList.remove('is-open');
@@ -62,9 +72,16 @@ if (confirmModal) {
     confirmOkBtn.addEventListener('click', () => {
 
         const form = pendingConfirmForm;
+        const submitter = pendingConfirmSubmitter;
         closeConfirmModal();
 
-        if (form) form.submit();
+        if (!form) return;
+
+        if (submitter && form.requestSubmit) {
+            form.requestSubmit(submitter);
+        } else {
+            form.submit();
+        }
     });
 
     window.addEventListener('keydown', (e) => {
@@ -104,7 +121,7 @@ document.addEventListener('click', (e) => {
         const menu = confirmBtn.closest('.card-menu');
         if (menu) closeAllCardMenus();
 
-        openConfirmModal(confirmBtn.dataset.confirm, confirmBtn.closest('form'));
+        openConfirmModal(confirmBtn.dataset.confirm, confirmBtn.closest('form'), confirmBtn);
         return;
     }
 

@@ -6,6 +6,7 @@ const newsForm = document.querySelector('#news-form');
 const newsTitleInput = document.querySelector('#news-title');
 const newsTagSelect = document.querySelector('#news-tag');
 const newsBodyInput = document.querySelector('#news-body');
+const newsCoverInput = document.querySelector('#news-cover-image');
 const newsModalTitle = document.querySelector('#news-modal-title');
 const newsSubmitBtn = document.querySelector('#news-submit-btn');
 const newsCloseBtn = document.querySelector('#news-modal-close');
@@ -18,6 +19,7 @@ function openNewsModal({ action, title, tag, body, heading, submitLabel }) {
     newsTitleInput.value = title || '';
     newsTagSelect.value = tag || 'news';
     newsBodyInput.value = body || '';
+    newsCoverInput.value = '';
     newsModalTitle.textContent = heading;
     newsSubmitBtn.textContent = submitLabel;
 

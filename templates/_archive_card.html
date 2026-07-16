@@ -1,6 +1,9 @@
-<a class="archive-card concept-card show" href="{{ url }}">
+<a class="archive-card concept-card show{% if cover_url %} has-cover{% endif %}" href="{{ url }}">
     {% if show_new_badge %}{% include '_new_badge.html' %}{% endif %}
-    <h3>{{ title_text }}</h3>
-    {% if meta_text %}<p class="meta">{{ meta_text }}</p>{% endif %}
-    <p>{{ body_text }}</p>
+    {% if cover_url %}<img class="archive-card-bg" src="{{ cover_url }}" alt="">{% endif %}
+    <div class="archive-card-body">
+        <h3>{{ title_text }}</h3>
+        {% if meta_text %}<p class="meta">{{ meta_text }}</p>{% endif %}
+        <p>{{ body_text }}</p>
+    </div>
 </a>

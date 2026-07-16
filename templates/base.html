@@ -12,7 +12,7 @@
     <link rel="alternate" type="application/rss+xml" title="DL Fantasy — Latest" href="{% url 'feed' %}">
 </head>
 
-<body>
+<body{% if page_cover_url %} class="has-page-cover" style="background-image:linear-gradient(rgba(5,5,5,0.87), rgba(5,5,5,0.87)), url('{{ page_cover_url }}')"{% endif %}>
     <div class="progress-bar"></div>
 
     <!-- NAVBAR -->

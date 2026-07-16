@@ -25,7 +25,7 @@
         </div>
         {% endif %}
 
-        <form class="auth-form upload-form" method="post">
+        <form class="auth-form upload-form" method="post" enctype="multipart/form-data">
             {% csrf_token %}
 
             {% if form.non_field_errors %}
@@ -35,6 +35,26 @@
             {% for field in form %}
             <div class="auth-field-group">
                 <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {% if field.name == 'cover_image' %}
+                <div class="cover-preview">
+                    {% if content.cover_url %}
+                    <img src="{{ content.cover_url }}" alt="Current cover" class="cover-preview-img">
+                    <button
+                        type="submit"
+                        formaction="{% url 'delete_content_cover' content.pk %}"
+                        formmethod="post"
+                        formnovalidate
+                        class="cover-delete-btn"
+                        aria-label="Delete cover image"
+                        data-confirm="Delete this cover image? This can't be undone."
+                    >
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14"></path><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path><path d="M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                    </button>
+                    {% else %}
+                    <p class="cover-preview-empty">No Image Uploaded</p>
+                    {% endif %}
+                </div>
+                {% endif %}
                 {{ field }}
                 <p class="form-error">{{ field.errors|join:", " }}</p>
             </div>
