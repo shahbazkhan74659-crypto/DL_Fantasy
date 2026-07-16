@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db.models import Count, DurationField, ExpressionWrapper, F, Sum
 from django.http import Http404, HttpResponse, JsonResponse
@@ -345,15 +346,45 @@ def signup(request):
     return render(request, 'signup.html', {'form': form, 'google_oauth_enabled': google_oauth.is_configured()})
 
 
+LOGIN_THROTTLE_LIMIT = 5
+LOGIN_THROTTLE_WINDOW = 15 * 60  # seconds — both the failed-attempt counting window and the lockout duration
+
+
+def _login_throttle_keys(request, email):
+    """Two independent cache counters — one per client IP, one per attempted email — so both a
+    single IP hammering many accounts and many IPs hammering one account get locked out. Uses
+    whatever CACHES backend is configured (LocMemCache by default here) rather than a new
+    dependency like django-axes.
+    """
+    ip = request.META.get('REMOTE_ADDR', 'unknown')
+    normalized_email = (email or '').strip().lower()
+    return f'login-throttle:ip:{ip}', f'login-throttle:email:{normalized_email}'
+
+
+def _is_login_throttled(request, email):
+    return any(cache.get(key, 0) >= LOGIN_THROTTLE_LIMIT for key in _login_throttle_keys(request, email))
+
+
+def _register_failed_login(request, email):
+    for key in _login_throttle_keys(request, email):
+        cache.set(key, cache.get(key, 0) + 1, LOGIN_THROTTLE_WINDOW)
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('account')
     next_url = request.POST.get('next') or request.GET.get('next', '')
     if request.method == 'POST':
-        form = StyledAuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            auth_login(request, form.get_user())
-            return redirect(_safe_next(request, next_url))
+        submitted_email = request.POST.get('username', '')
+        if _is_login_throttled(request, submitted_email):
+            messages.error(request, 'Too many failed login attempts. Please wait a few minutes and try again.')
+            form = StyledAuthenticationForm(request, initial={'username': submitted_email})
+        else:
+            form = StyledAuthenticationForm(request, data=request.POST)
+            if form.is_valid():
+                auth_login(request, form.get_user())
+                return redirect(_safe_next(request, next_url))
+            _register_failed_login(request, submitted_email)
     else:
         form = StyledAuthenticationForm(request)
     return render(request, 'login.html', {
@@ -492,6 +523,9 @@ def edit_user(request, user_id):
     if request.method == 'POST':
         form = UserEditForm(request.POST, instance=target)
         if form.is_valid():
+            if (target.is_staff or target.is_superuser) and not form.cleaned_data['is_active']:
+                messages.error(request, "Admin accounts can't be deactivated.")
+                return redirect('users_list')
             form.save()
             messages.success(request, f"{target.username} was updated.")
         else:

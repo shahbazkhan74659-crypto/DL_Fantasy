@@ -1,5 +1,5 @@
 from django import forms
-from django.contrib.auth.forms import AuthenticationForm, SetPasswordForm, UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, PasswordChangeForm, UserCreationForm
 
 from upload.models import News
 from users.models import User
@@ -45,8 +45,11 @@ class StyledAuthenticationForm(AuthenticationForm):
         )
 
 
-class StyledPasswordChangeForm(SetPasswordForm):
-    """No old-password check for now — revisit once real account security is in scope."""
+class StyledPasswordChangeForm(PasswordChangeForm):
+    """Requires the current password (PasswordChangeForm's built-in old_password check) before
+    allowing a new one — closes a session-hijack-to-permanent-takeover gap where a hijacked
+    session cookie alone was enough to lock the real owner out permanently.
+    """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
