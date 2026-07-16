@@ -42,9 +42,9 @@ def _content_url(entry):
 
 
 def home(request):
-    recent = Content.objects.filter(is_published=True).order_by('-created_at')[:6]
+    entries = Content.objects.filter(is_published=True).order_by('-created_at')
     spotlight = Content.objects.filter(is_published=True).order_by('?')[:SPOTLIGHT_SIZE]
-    return render(request, 'home.html', {'recent': recent, 'spotlight': spotlight})
+    return render(request, 'home.html', {'entries': _paginate(request, entries), 'spotlight': spotlight})
 
 
 def shuffle_spotlight(request):

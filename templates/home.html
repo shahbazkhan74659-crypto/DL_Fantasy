@@ -30,15 +30,16 @@
 </section>
 
 <section class="archive">
-    <h2>Recent Entries</h2>
+    <h2>Explore</h2>
     <div class="archive-grid">
-        {% for entry in recent %}
+        {% for entry in entries %}
         {% if entry.category == 'godvalley' %}{% url 'godvalley_detail' entry.slug as entry_url %}{% else %}{% url 'writings_detail' entry.category entry.slug as entry_url %}{% endif %}
-        {% include '_archive_card.html' with url=entry_url title_text=entry.title body_text=entry.excerpt cover_url=entry.cover_url %}
+        {% include '_archive_card.html' with url=entry_url title_text=entry.title meta_text=entry.created_at|date:"F j, Y" body_text=entry.excerpt cover_url=entry.cover_url %}
         {% empty %}
         <p>No entries yet — check back soon.</p>
         {% endfor %}
     </div>
+    {% include '_pagination.html' with page_obj=entries %}
 </section>
 
 {% endblock %}

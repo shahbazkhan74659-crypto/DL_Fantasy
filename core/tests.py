@@ -19,7 +19,7 @@ class HomeViewTests(TestCase):
 
     def test_home_excludes_unpublished(self):
         response = self.client.get(reverse('home'))
-        titles = [entry.title for entry in response.context['recent']]
+        titles = [entry.title for entry in response.context['entries']]
         self.assertIn('Published', titles)
         self.assertNotIn('Unpublished', titles)
 

@@ -2285,6 +2285,10 @@ input[type="file"].auth-field:hover::-webkit-file-upload-button{
     left:50%;
     transform:translate(-50%, -48%);
     width:min(420px, 90vw);
+    max-height:85vh;
+    overflow-y:auto;
+    scrollbar-width:none;
+    -ms-overflow-style:none;
     background:var(--bg-secondary);
     border:1px solid var(--border-dark);
     border-radius:var(--radius-md);
@@ -2294,6 +2298,10 @@ input[type="file"].auth-field:hover::-webkit-file-upload-button{
     pointer-events:none;
     transition:opacity 0.3s var(--ease), transform 0.3s var(--ease);
     z-index:1201;
+}
+
+.modal::-webkit-scrollbar{
+    display:none;
 }
 
 .modal.is-open{
