@@ -1,9 +1,27 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
 from django.db import models
+
+username_validator = RegexValidator(
+    regex=r'^[\w.@+\- ]+$',
+    message='Only letters, digits, spaces, and @/./+/-/_ are allowed.',
+)
 
 
 class User(AbstractUser):
-    """Custom user model so future non-admin accounts don't require a data migration."""
+    """Custom user model so future non-admin accounts don't require a data migration.
+
+    Overrides AbstractUser's `username` only to relax its validator to also allow spaces (e.g.
+    "Shahbaz Khan") — this project's username doubles as a visible display handle (shown on
+    /users/, /profile/, admin) rather than a login identifier (login is by email, see
+    users.backends.EmailBackend), so Django's default no-spaces restriction serves no purpose here.
+    """
+    username = models.CharField(
+        'username', max_length=150, unique=True,
+        help_text='150 characters or fewer. Letters, digits, spaces, and @/./+/-/_ only.',
+        validators=[username_validator],
+        error_messages={'unique': 'A user with that username already exists.'},
+    )
     google_sub = models.CharField(
         max_length=255, blank=True, null=True, unique=True,
         help_text="Google's stable per-account ID ('sub' claim) — the real link to a Google "

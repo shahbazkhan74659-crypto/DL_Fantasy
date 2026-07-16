@@ -66,6 +66,18 @@ LOGOUT_REDIRECT_URL = 'home'
 GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '')
 GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET', '')
 
+# Signup email verification via Gmail SMTP (core/otp.py) — optional, same self-hiding pattern as
+# GOOGLE_OAUTH_* above: unset in .env, signup activates accounts immediately (today's behavior)
+# instead of requiring an OTP. EMAIL_HOST_USER is a Gmail address; EMAIL_HOST_PASSWORD is a Gmail
+# *app password* (myaccount.google.com/apppasswords), not the account's real login password.
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

@@ -26,6 +26,8 @@
         <span></span>
         {% endif %}
 
+        <a class="btn-outline" href="{% url 'godvalley_chapters' %}" data-smart-back>Back</a>
+
         {% if next_chapter %}
         <a class="btn-outline" href="{% url 'godvalley_detail' next_chapter.slug %}">Ch. {{ next_chapter.chapter_number }} &rarr;</a>
         {% else %}

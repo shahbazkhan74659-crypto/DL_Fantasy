@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Verify Email | DL Fantasy{% endblock %}
+{% block content %}
+
+<div class="auth-page">
+    <div class="auth-card">
+
+        <section class="auth-section">
+            <span class="section-tag">Account Access</span>
+            <h1>Verify Your Email</h1>
+        </section>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <p class="auth-switch">Enter the 6-digit code we sent to {{ email }}.</p>
+
+        <form class="auth-form" method="post" novalidate>
+            {% csrf_token %}
+            <div class="auth-field-group">
+                <label for="otp-code">Verification Code</label>
+                <input type="text" id="otp-code" name="code" class="auth-field" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" autofocus>
+            </div>
+            <button type="submit" class="btn">Verify</button>
+        </form>
+
+        <form class="resend-form" method="post" action="{% url 'resend_otp' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn-link-blue">Resend Code</button>
+        </form>
+
+    </div>
+</div>
+
+{% endblock %}

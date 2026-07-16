@@ -19,8 +19,8 @@
     </div>
 
     <div class="chapter-nav">
-        <a class="btn-outline" href="{% url 'writings_category_list' entry.category %}">
-            &larr; Back to {{ entry.get_category_display }}
+        <a class="btn-outline" href="{% url 'writings_category_list' entry.category %}" data-smart-back>
+            &larr; Back
         </a>
     </div>
 </section>

@@ -17,7 +17,7 @@ const SCHEMAS = {
         username: z.string()
             .min(1, 'Username is required.')
             .max(150, 'Username must be 150 characters or fewer.')
-            .regex(/^[\w.@+-]+$/, 'Only letters, digits, and @/./+/-/_ are allowed.'),
+            .regex(/^[\w.@+\- ]+$/, 'Only letters, digits, spaces, and @/./+/-/_ are allowed.'),
         email: z.string()
             .min(1, 'Email is required.')
             .email('Enter a valid email address.'),

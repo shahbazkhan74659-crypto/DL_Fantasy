@@ -16,7 +16,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from upload.models import Content, DownloadHistory, Favourite, News, ReadingHistory, ReadingListItem, Subcategory
 from users.models import DeletedUser, User, VisitSession
 
-from . import google_oauth
+from . import google_oauth, otp
 from .forms import NewsForm, ProfileForm, SignupForm, StyledAuthenticationForm, UserEditForm
 from .pdf import build_content_pdf
 
@@ -331,12 +331,29 @@ def _safe_next(request, next_url):
     return 'home'
 
 
+PENDING_VERIFICATION_SESSION_KEY = 'pending_verification_user_id'
+
+
 def signup(request):
     if request.user.is_authenticated:
         return redirect('account')
     if request.method == 'POST':
         form = SignupForm(request.POST)
         if form.is_valid():
+            if otp.is_configured():
+                user = form.save(commit=False)
+                user.is_active = False
+                user.save()
+                try:
+                    otp.generate_and_send(user)
+                except otp.OTPSendError:
+                    messages.error(request, 'Could not send a verification email — please try again shortly.')
+                    return render(request, 'signup.html', {
+                        'form': SignupForm(), 'google_oauth_enabled': google_oauth.is_configured(),
+                    })
+                request.session[PENDING_VERIFICATION_SESSION_KEY] = user.pk
+                messages.success(request, f'We sent a 6-digit verification code to {user.email}.')
+                return redirect('verify_email')
             user = form.save()
             auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             messages.success(request, 'Welcome to DL Fantasy — your account is ready.')
@@ -344,6 +361,45 @@ def signup(request):
     else:
         form = SignupForm()
     return render(request, 'signup.html', {'form': form, 'google_oauth_enabled': google_oauth.is_configured()})
+
+
+def verify_email(request):
+    user_id = request.session.get(PENDING_VERIFICATION_SESSION_KEY)
+    if not user_id:
+        return redirect('signup')
+    user = get_object_or_404(User, pk=user_id, is_active=False)
+
+    if request.method == 'POST':
+        code = request.POST.get('code', '').strip()
+        if otp.verify(user, code):
+            user.is_active = True
+            user.save()
+            del request.session[PENDING_VERIFICATION_SESSION_KEY]
+            auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            messages.success(request, 'Email verified — welcome to DL Fantasy.')
+            return redirect('home')
+        messages.error(request, 'Incorrect or expired code. Please try again.')
+
+    return render(request, 'verify_email.html', {'email': user.email})
+
+
+def resend_otp(request):
+    if request.method != 'POST':
+        raise Http404
+    user_id = request.session.get(PENDING_VERIFICATION_SESSION_KEY)
+    if not user_id:
+        return redirect('signup')
+    user = get_object_or_404(User, pk=user_id, is_active=False)
+    try:
+        sent = otp.generate_and_send(user)
+    except otp.OTPSendError:
+        messages.error(request, 'Could not send a verification email — please try again shortly.')
+        return redirect('verify_email')
+    if sent:
+        messages.success(request, f'A new code was sent to {user.email}.')
+    else:
+        messages.error(request, 'Please wait a bit before requesting another code.')
+    return redirect('verify_email')
 
 
 LOGIN_THROTTLE_LIMIT = 5

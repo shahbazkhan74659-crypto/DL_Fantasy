@@ -313,9 +313,12 @@ auth. Routes live in `core/urls.py`/`core/views.py` (`signup`, `login_view`, `ac
 inline), matching the "core owns all views/URLs" convention above. Forms live in `core/forms.py`
 (`SignupForm`, `StyledAuthenticationForm`, `StyledPasswordChangeForm`) rather than `users/forms.py`,
 since `core` already reaches into other apps' models directly (`from upload.models import Content`).
-`StyledPasswordChangeForm` subclasses Django's `SetPasswordForm`, not `PasswordChangeForm` — there
-is deliberately no current-password check on `/account/password/` right now (removed at explicit
-request; revisit once real account security is in scope).
+`StyledPasswordChangeForm` subclasses Django's stock `PasswordChangeForm` (not `SetPasswordForm`),
+so `/account/password/` requires the current password before accepting a new one. This used to be
+the other way around — `SetPasswordForm`, deliberately with no current-password check, "removed at
+explicit request; revisit once real account security is in scope" — until **agent-security**'s
+audit (see **Custom Claude Code agents** below) flagged exactly that gap (a hijacked session cookie
+alone was enough to permanently lock the real owner out) and this was confirmed as that revisit.
 
 The public login form (`/login/`) authenticates by **email**, not username, even though `User`'s
 `USERNAME_FIELD` is still `username` (unchanged, so `createsuperuser`/admin login are unaffected).
@@ -623,3 +626,128 @@ block) — a boxed, vertically-centered card with a thin gold top hairline and a
 left-aligned column. `account.html` intentionally still uses the older plain `.auth-container`
 layout, not `.auth-card` — its content (stats grid, activity chart) doesn't fit a narrow centered
 card the way a short credentials form does.
+
+## Custom Claude Code agents: agent-refactor, agent-cleancode, agent-security
+
+Three project-scoped subagents live under `.claude/agents/` (`agent-refactor.md`,
+`agent-cleancode.md`, `agent-security.md`) — Claude Code tooling checked into the repo, not
+application code, so any future session can invoke them the same way rather than re-deriving an
+audit approach from scratch each time.
+
+All three share one deliberate design: exactly two explicit, user-triggered modes, never blended.
+**FIND** (read-only, safe, the default) scans and reports — it must never write, edit, or delete a
+file. **FIX** (write access) only runs on its own separate, explicit follow-up command (e.g. "fix
+it", "clean these up") — a FIND report is never allowed to auto-escalate into edits on the same
+turn. This mirrors the project's general "confirm before hard-to-reverse actions" norm, deliberately
+applied to whole-codebase audits specifically so "audit this" and "now fix what you found" are
+always two separately-authorized steps. Each agent's frontmatter also had to route around a real
+YAML gotcha discovered while building the first one: a `description:` field written as a long
+unquoted plain scalar breaks silently (and the agent fails to register at all) if it contains an
+unescaped `": "` sequence anywhere, since YAML reads that as a new mapping key — the fix was to
+keep the frontmatter `description` short and colon-safe and move the detailed mode explanation/
+examples into the markdown body instead, which became the template all three agents followed.
+Also worth knowing: a newly created or edited agent definition doesn't take effect in an
+already-running session — the available-agent list loads once at session start, so a fresh session
+(or IDE reconnect) is needed before a brand-new or just-edited agent can actually be invoked.
+
+**`agent-refactor`** — finds, and on command fixes, cross-file code duplication and repo-wide
+unused/dead code. Its brief explicitly excludes flagging this codebase's own deliberate shared
+components (`_card_menu.html`/`card-menu.js`, `_archive_card.html`, the site-wide confirm modal,
+etc.) as "duplication," since those exist specifically to be reused from one place. Its first
+whole-repo FIND pass found 6 duplication clusters and 0 dead code; on command it fixed the 5
+actionable ones (two were deliberately left alone as already-documented intentional parallel
+structure, not oversights): (1) the God Valley vs. Writings public-URL branch was reimplemented 11
+times across `core/views.py`, `core/feeds.py`, `core/sitemaps.py`, and 7 templates instead of using
+`Content.get_absolute_url()`, which already existed — all 11 sites now call it; (2) `profile.js`,
+`users-list.js`, and `news.js` each hand-rolled their own modal open/close logic that duplicated
+what `card-menu.js`'s confirm-modal already generalized — `card-menu.js` gained shared
+`openModal()`/`closeModal()` globals and the three page scripts were rewired onto them, keeping
+only their own field-population logic local; (3) `godvalley_chapters.html` hand-inlined
+`_archive_card.html`'s markup instead of including it — now does; (4) a new
+`templates/_reading_history_row.html` partial replaced duplicated `.reading-history-item` markup
+shared by `profile.html`/`downloads.html`; (5) a new `templates/_google_signin_button.html` partial
+replaced the "Continue with Google" block duplicated verbatim between `login.html`/`signup.html`.
+
+**`agent-cleancode`** — finds, and on command fixes, "ugly, irrelevant, and unreliable" code:
+misleading naming/structure, dead comments/debug leftovers/stale TODOs, and concrete reliability
+bugs — explicitly scoped away from `agent-refactor`'s duplication/dead-code territory, and
+explicitly instructed not to fight this file's own stated philosophy (default to no comments unless
+the WHY is genuinely non-obvious, no speculative validation/error-handling, no premature
+abstraction — see **Doing tasks** norms this project inherits from the top-level Claude Code system
+prompt). Its FIND pass found 4 issues and 0 "irrelevant" findings (no dead comments, debug
+leftovers, or stale TODOs turned up anywhere in the codebase). Fixed on command: (1)
+`godvalley_detail` could 500 if a God Valley chapter's `chapter_number` was left blank (the model
+field is nullable, shared with Fiction, but the view's prev/next lookup unconditionally compares
+against it) — `GodValleyUploadForm` now makes `chapter_number` required, an intentional behavior
+change closing off the invalid state entirely; (2) `SECRET_KEY` was a hardcoded
+`startproject`-default literal committed to git, in a repo where every other secret already flows
+through `.env` — rotated to a freshly generated value, moved into `.env`, and read via
+`os.environ['SECRET_KEY']` (mandatory, matching the `DB_*` convention); the old committed key is
+permanently burned and never reused. (3) `main.js`'s link fade-transition effect wasn't
+re-registered inside `initPageEffects()`, so it silently broke on any link rendered via
+`list-filters.js`'s AJAX soft-navigation — moved inside, matching the file's own documented
+re-registration convention. (4) `main.js`/`list-filters.js` used a two-statement-per-line
+formatting style found nowhere else in the JS codebase — reflowed to match.
+
+**`agent-security`** — a full security audit specialist: injection, auth/access-control gaps,
+exposed secrets (working tree *and* git history, not just HEAD), OWASP-class web vulnerabilities,
+crypto/data-protection issues, config/deployment hardening, dependency CVEs, and malicious/
+backdoor-shaped code. Positioned as this repo's authoritative source for anything
+security-classified, deferring pure quality/duplication concerns to the other two agents. Every
+finding has to trace to a concrete, real exploit scenario in this codebase's actual configuration,
+not a generic checklist hit — and the report has to explicitly list what was checked and ruled safe,
+not just what's wrong, so a clean result reads as verified rather than skipped. Its first whole-repo
+FIND pass came back 0 Critical/High, 5 Medium, 2 Low, with SQL/command injection, XSS, CSRF, open
+redirects, SSRF, clickjacking, IDOR, privilege escalation via forms, and all `requirements.txt` pins
+verified clean — and it independently re-confirmed the `SECRET_KEY` rotation above was actually
+closed (old key dead, `.env` untracked, never reused). Findings, fixed on command across two rounds
+(6 of 7 — email verification was deliberately deferred, see below): **DEBUG** now defaults to
+`'False'` when unset (fails closed on a forgotten `.env`, instead of the previous fail-open
+default), with an explicit `DEBUG=True` line added to the actual `.env` so local dev behavior
+didn't change. **Password change** now requires the current password — see the **Visitor auth**
+section above; this is exactly the "revisit once real account security is in scope" this file
+already called for. **Production cookie/HSTS hardening** (`SESSION_COOKIE_SECURE`,
+`CSRF_COOKIE_SECURE`, `SECURE_SSL_REDIRECT`, `SECURE_HSTS_SECONDS`,
+`SECURE_HSTS_INCLUDE_SUBDOMAINS`) was added, gated on `not DEBUG` so it's dormant on today's local
+dev and activates automatically the moment a real deployment runs with `DEBUG=False`. **Login
+throttling** was added to `login_view` (`core/views.py`) — 5 failed attempts locks out for 15
+minutes, keyed by both IP and attempted email independently, built entirely on Django's cache
+framework rather than a new dependency like `django-axes`. **`edit_user`** now refuses to
+deactivate a staff/superuser target, mirroring the guard `delete_user` already had. **Unpublished
+content's cover images staying reachable via a guessed direct `/media/` URL** was investigated and
+deliberately left unfixed — properly closing it needs a new authenticated media-serving view
+rewired across roughly a dozen templates, which the agent's own FIX-mode rules correctly treat as
+too large a change to force through a contained fix rather than as something to paper over.
+
+**No email verification at signup** (the 7th finding) was deferred rather than fixed inline, since
+closing it required a real infrastructure decision (an email backend) the codebase didn't have yet.
+That decision was made in the same session, just not through the agent: **Gmail SMTP OTP
+verification at signup** — `core/otp.py` (a new small single-purpose module, same "core owns one
+file per cross-cutting concern" pattern as `google_oauth.py`/`feeds.py`/`sitemaps.py`/`pdf.py`),
+optional and self-hiding exactly like `google_oauth.is_configured()` (unset `EMAIL_HOST_USER`/
+`EMAIL_HOST_PASSWORD` in `.env` and signup activates accounts immediately, unchanged from before
+this feature existed). When configured, `signup` creates the account with `is_active=False`,
+emails a 6-digit code (`secrets`-grade random, cache-backed with a 10-minute TTL, attempt-limited
+to 5 tries, resend-cooldown 60s — no new model/migration needed), and a new `/signup/verify/`
+page (`core.views.verify_email`/`resend_otp`, `templates/verify_email.html`) activates the account
+and logs the visitor in once the code matches. Deliberately reuses the existing `is_active` field
+rather than adding a new column — the same field an admin already uses to deactivate someone on
+`/users/`, so an unverified signup and an admin-deactivated account currently look identical on the
+Users list; acceptable for now given this is a personal single-author site, revisit with a distinct
+status badge if that ambiguity ever actually matters. Chosen over a third-party transactional email
+provider specifically because it needs no domain/DNS setup — just a Gmail account's app password
+(`myaccount.google.com/apppasswords`) — matching this project's general preference for
+zero-infrastructure options (e.g. `reportlab` over WeasyPrint for the same reason, see **Downloads**
+above).
+
+## Planned next: SEO for the site's mechanics, not its content
+
+The next round of work planned is SEO — but scoped deliberately to the *website*, not the
+*content*. Fiction/Philosophy/Mythology/God Valley chapters and News dispatches are fictional and
+personal creative writing, not informational articles written to satisfy search intent — so
+content-level SEO tactics (keyword targeting, rewriting prose for search engines, per-chapter meta
+descriptions optimized for click-through rather than for a reader) don't apply here and shouldn't
+be done. The actual SEO work belongs at the site's technical/structural layer instead: things like
+`core/sitemaps.py`'s `ContentSitemap`/`StaticViewSitemap` and `core/feeds.py`'s `LatestContentFeed`
+(see **Syndication / SEO** above) are the right kind of surface to extend — page titles/meta
+descriptions, structured data, crawlability, canonical URLs, performance — not the prose itself.
