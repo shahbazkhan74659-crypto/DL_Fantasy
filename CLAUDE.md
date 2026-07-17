@@ -740,6 +740,83 @@ provider specifically because it needs no domain/DNS setup — just a Gmail acco
 zero-infrastructure options (e.g. `reportlab` over WeasyPrint for the same reason, see **Downloads**
 above).
 
+## Deployment: Docker + Railway (codebase is production-ready; not yet actually deployed)
+
+The site now has everything needed to deploy to Railway with a MySQL plugin database and a
+Dockerized web service — but as of this writing **nothing has actually been deployed**; the owner
+deliberately wants to wait until there's "tons of content" before going live, so this section
+documents readiness, not a live URL. When that time comes, the person running the deploy is
+expected to have Railway CLI access already logged in under the project owner's account (confirmed
+present in the dev environment this was prepped in) — actual provisioning (creating the MySQL
+service, the web service, setting variables, deploying) is intentionally left as a manual
+`later, new project` step rather than something run automatically the moment the codebase was
+ready, since creating billable cloud resources is exactly the kind of hard-to-reverse, real-world
+action that needs the owner's explicit go-ahead, not just code-readiness.
+
+**`Dockerfile`** (repo root) — `python:3.11-slim`, installs `default-libmysqlclient-dev`/`pkg-config`/
+`gcc` at build time (needed to compile `mysqlclient`'s C extension against MySQL's client library —
+this project already runs on real MySQL, see **Divergences from Project-Scope.md** above, not
+sqlite, so this is a real build requirement, not defensive padding), installs `requirements.txt`,
+copies the app in, and hands off to `entrypoint.sh` as its `ENTRYPOINT`. **`entrypoint.sh`** runs
+`migrate` → `collectstatic` → `exec gunicorn dlfantasy.wsgi:application --bind 0.0.0.0:${PORT:-8000}`
+on every container start — this is what makes migrations happen automatically on each deploy, since
+Railway (unlike Heroku) has no separate "release phase" concept to hang a one-off migrate command
+off of; binding to `$PORT` (Railway injects this per-container, falling back to 8000 for a plain
+local `docker run`) rather than a hardcoded port is required — Railway's edge won't route to a
+container listening on the wrong port. **`.dockerignore`** excludes `venv/`, `.git/`, `.env`,
+`db.sqlite3`, `media/`, `Cover/`, `staticfiles/`, and `.claude/` from the build context.
+
+**`requirements.txt`** gained `gunicorn` (production WSGI server — `runserver` is dev-only and was
+never meant to hold real traffic) and `whitenoise` (serves collected static files straight out of
+the gunicorn process, so this single-container deploy needs no separate nginx/CDN layer — chosen
+for the same "no extra infrastructure" reasoning `reportlab`/Gmail-SMTP-OTP were chosen for
+elsewhere in this file).
+
+**`settings.py`** gained, all scoped to not touch today's local `DEBUG=True` dev behavior:
+`STATIC_ROOT` (the directory `collectstatic` populates — distinct from `STATICFILES_DIRS`, which is
+the source directory already checked into git) plus a `STORAGES['staticfiles']` backend of
+`whitenoise.storage.CompressedManifestStaticFilesStorage` (hashed filenames, far-future cache
+headers, gzip/brotli precompression) and `WhiteNoiseMiddleware` added right after
+`SecurityMiddleware`; `CSRF_TRUSTED_ORIGINS` read from a new env var (Django's CSRF check compares
+the request's `Origin` against this list including scheme, and Railway sits in front as a reverse
+proxy, so this has to be populated with the live domain once one exists); and
+`SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')` inside the existing
+`if not DEBUG:` hardening block — without this, `SECURE_SSL_REDIRECT` (already present, see
+**agent-security** above) redirect-loops forever, because Railway's edge terminates TLS and forwards
+plain HTTP to the container, so Django would otherwise see every request as insecure regardless of
+what the visitor's browser actually used.
+
+**The one real bug this process found: cover images would have silently died in production.**
+`dlfantasy/urls.py` only appends the `static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)`
+route inside `if settings.DEBUG:` — Django's own documented dev-only shortcut for serving
+`MEDIA_ROOT` (uploaded `Content`/`News` cover images, see **Downloads** and the Upload page's
+`cover_image` field above). Since production is required to run `DEBUG=False` (the fail-closed
+default **agent-security** put in place), that route silently never gets registered on a real
+deploy — every `archive-card-bg`/`item.cover_url` image reference across the site would 404 the
+moment this went live, while looking completely fine in every local dev session, since local dev
+always runs `DEBUG=True`. This would not have shown up in `manage.py check`, in tests, or in any
+local QA — it only manifests under the exact `DEBUG=False` condition production requires, which is
+precisely why it was easy to miss until deployment prep specifically went looking for it. Fixed in
+`dlfantasy/wsgi.py` by wrapping the WSGI `application` in `whitenoise.WhiteNoise(application,
+root=str(settings.MEDIA_ROOT), prefix=settings.MEDIA_URL)` — this is `whitenoise`'s own documented
+pattern for serving user-uploaded media (distinct from the `WhiteNoiseMiddleware` above, which only
+ever handles `STATIC_ROOT`), and it works specifically because gunicorn invokes `wsgi.py`'s
+`application` directly, while local `manage.py runserver` never touches `wsgi.py` at all — so this
+fix is additive and inert for local dev (which keeps working exactly as before, off the
+`urls.py`/`DEBUG` route), and only takes effect under gunicorn in a real deploy.
+
+**Still open, deliberately left for whenever deploy actually happens** (not fixed now since there's
+no live environment yet to verify any of these against): a Railway **Volume** must be mounted at
+the container's media path before going live, or every uploaded cover image is lost on the next
+redeploy — Railway container filesystems are ephemeral outside an explicit Volume, and this project
+has no S3/external object storage. `ALLOWED_HOSTS`/`CSRF_TRUSTED_ORIGINS` can't be set correctly
+until Railway assigns a real domain, which only happens after a first deploy exists — this is an
+unavoidable two-pass flow (deploy once, read the generated domain, set the two vars, redeploy), not
+an oversight. If Google Sign-In (see **"Sign in with Google"** above) is enabled in production, the
+live domain's `/auth/google/callback/` also needs adding to that OAuth client's Authorized redirect
+URIs in Google Cloud Console — the client ID/secret themselves don't change across environments and
+can be copied as-is from `.env`.
+
 ## Planned next: SEO for the site's mechanics, not its content
 
 The next round of work planned is SEO — but scoped deliberately to the *website*, not the
