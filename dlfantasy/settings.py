@@ -32,6 +32,11 @@ DEBUG = os.environ.get('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',') if os.environ.get('ALLOWED_HOSTS') else []
 
+# Needed behind Railway's proxy: Django's CSRF check compares the request's Origin header against
+# this list (scheme included), since Railway terminates TLS in front of the container — without it,
+# every POST (login, upload, etc.) on the deployed domain fails CSRF validation.
+CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', '').split(',') if os.environ.get('CSRF_TRUSTED_ORIGINS') else []
+
 
 # Application definition
 
@@ -80,6 +85,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -166,6 +172,21 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     BASE_DIR / "static",
 ]
+# Collected into by `collectstatic` at image-build/container-start time (see entrypoint.sh) —
+# distinct from STATICFILES_DIRS above, which is the source directory checked into git.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Serves collected static files straight from the Django/gunicorn process in the container —
+# no separate CDN/nginx needed for a single-container Railway deploy. Compressed + hashed
+# filenames for far-future cache headers.
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
@@ -179,6 +200,10 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # Railway's edge terminates TLS and forwards plain HTTP to the container, so Django has to be
+    # told which header carries the original scheme — without this, SECURE_SSL_REDIRECT above
+    # sees every request as insecure and redirect-loops the site.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

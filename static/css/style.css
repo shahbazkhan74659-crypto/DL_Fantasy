@@ -96,9 +96,11 @@
 
 html{
     scroll-behavior: smooth;
+    overflow-x:hidden;
 }
 
 body{
+    overflow-x:hidden;
     background-color:var(--bg-primary);
     background-image:
         linear-gradient(rgba(5,5,5,0.87), rgba(5,5,5,0.87)),
@@ -798,14 +800,43 @@ footer small{
         align-items:flex-start;
         gap:10px;
     }
-    .about-container{
-        padding:0 5%;
-    }
     .pagination{
         flex-direction:column;
         gap:12px;
         align-items:flex-start;
     }
+    .logo{
+        font-size:1.4rem;
+    }
+    .nav-links{
+        gap:8px;
+    }
+    .nav-links a{
+        font-size:0.85rem;
+    }
+    .nav-divider{
+        font-size:0.8rem;
+    }
+    .nav-right-group{
+        gap:14px;
+    }
+    #clock{
+        font-size:1.1rem;
+        min-width:70px;
+    }
+    .upload-existing-item{
+        flex-wrap:wrap;
+    }
+    .upload-existing-date{
+        margin-left:auto;
+    }
+}
+
+/* Defensive wrap for button rows that could otherwise overflow a narrow viewport */
+.account-actions,
+.modal-actions,
+.upload-edit-actions{
+    flex-wrap:wrap;
 }
 
 /* REDUCED MOTION */
@@ -1217,6 +1248,13 @@ footer small{
     padding:0 20px;
 }
 
+@media(max-width:600px){
+    .archive-container{
+        margin:32px auto;
+        padding:0 var(--gutter);
+    }
+}
+
 /* The Archive directory page's own header sits directly under the navbar with nothing else
    above it, so the shared .archive-container top margin (tuned for pages like /news/ and
    /profile/ that need more clearance) reads as an oversized gap here. */
@@ -1335,6 +1373,14 @@ footer small{
     max-width:800px;
     margin:80px auto;
     padding:0 20px;
+}
+
+@media(max-width:600px){
+    .about-container,
+    .auth-container{
+        margin:40px auto;
+        padding:0 var(--gutter);
+    }
 }
 
 .about-section,
@@ -2176,10 +2222,13 @@ input[type="file"].auth-field:hover::-webkit-file-upload-button{
     border:1px solid var(--border-dark);
     border-radius:var(--radius-md);
     background:var(--bg-secondary);
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
 }
 
 .users-table{
     width:100%;
+    min-width:640px;
     table-layout:fixed;
     border-collapse:collapse;
     font-family:'Inter', sans-serif;
