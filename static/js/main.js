@@ -106,10 +106,10 @@ function initPageEffects() {
 
     links.forEach((link) => {
 
-        // Skip topic-filter chips, pagination links, and in-page search boxes —
-        // list-filters.js handles those itself via a delegated listener, swapping
-        // main.page-content in place instead of doing a full page navigation.
-        if(link.closest(".topic-filter, .pagination")){
+        // Skip topic-filter chips, the order toggle, pagination links, and in-page search
+        // boxes — list-filters.js handles those itself via a delegated listener, swapping
+        // content in place instead of doing a full page navigation.
+        if(link.closest(".topic-filter, .order-toggle, .pagination")){
 
             return;
         }

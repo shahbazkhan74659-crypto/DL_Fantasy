@@ -100,6 +100,16 @@ for The God Valley and "Writings" for the other three, mirroring the site's real
 (God Valley is a standalone top-level story; Fiction/Philosophy/Mythology are the three Writings
 sub-categories) rather than being decorative.
 
+The same icon-ring/eyebrow/footer visual language was later reused on the *visitor-facing* Writings
+hub (`/writings/`, `templates/writings.html`) for its three category cards (Fiction/Philosophy/
+Mythology) — `core.views.WRITINGS_CARDS` mirrors `upload.views.CARDS`'s shape (icon slug,
+description, singular/plural noun) and `writings()` computes the same kind of live per-category
+item count in one aggregated query, picking the card's body text from the category's most recent
+entry's excerpt when one exists. Sharing the look meant renaming the CSS from `upload-hub-*` to the
+now-generic `hub-card-*` (`static/css/style.css`) and updating `upload_hub.html` to match, rather
+than duplicating the whole icon-ring/eyebrow/footer treatment a second time under a new name — the
+two pages' cards are visually identical aside from content.
+
 **`Subcategory`** (`upload.models.Subcategory`) is the piece that's actually meant to be
 admin-extensible with zero code changes: which Fiction *story* a chapter belongs to, which
 Philosophy *topic*, or which Mythology *tradition* — `parent_category` (one of Fiction/Philosophy/
@@ -266,15 +276,73 @@ list+detail:
 
 - `godvalley_list` (`/godvalley/`) — static hero + lore/story blurb, no DB query. This is the page
   linked from the navbar and from the Archive index.
-- `godvalley_chapters` (`/godvalley/chapters/`) — the actual chapter grid, with `?q=` title search
-  (`Content.objects.filter(title__icontains=...)`). This is the only real search on the site.
-  Ordered `-chapter_number` (newest chapter first, Chapter 1 sinks to the bottom) — a deliberate
-  choice so readers land on the latest release first, matching how `writings_category_list` already
-  sorts by `-created_at`. This is independent of `godvalley_detail`'s prev/next nav, which still
-  queries by `chapter_number__lt`/`__gt` and is unaffected by list ordering.
+- `godvalley_chapters` (`/godvalley/chapters/`) — the actual chapter grid. Its `?q=` title-search
+  input (`Content.objects.filter(title__icontains=...)`) was later removed from the page — the view
+  still applies `?q=` if reached directly by URL, but nothing in the UI links to it anymore; see
+  **List filtering and ordering** below for what replaced the page's controls. Default order is
+  `-chapter_number` (newest chapter first, Chapter 1 sinks to the bottom) — a deliberate choice so
+  readers land on the latest release first, matching how `writings_category_list` already sorts by
+  `-created_at` — but is now visitor-toggleable via `?order=new|old`, also covered below. This is
+  independent of `godvalley_detail`'s prev/next nav, which still queries by
+  `chapter_number__lt`/`__gt` and is unaffected by list ordering.
 - `godvalley_detail` (`/godvalley/<slug>/`) — chapter body + prev/next, computed via two indexed
   `chapter_number__lt`/`__gt` queries with `.only(...)` (not a full-table scan; avoids loading every
   chapter's `body` just to find neighbors).
+
+### List filtering and ordering: shared dropdown + order toggle, and scoped soft-nav fade
+
+Both `/godvalley/chapters/` and `/writings/<category>/` carry the same two controls above their
+card grid: a filter dropdown and a newest/oldest order toggle. Rather than building this twice,
+both reuse the existing three-dot **reusable card menu** module's open/close/outside-click/Escape
+behavior (`.card-menu`/`.card-menu-toggle`/`card-menu.js`, see **Reusable card menu** above) — the
+dropdown is a `.card-menu` wearing filter-chip chrome instead of a three-dot icon, so it inherits
+working interaction for free. Shared chrome classes (`.control-btn`, `.filter-toggle`,
+`.filter-checkbox`, `.filter-label`, `.filter-chevron`, `.filter-dropdown`) live in
+`static/css/style.css`'s "LIST CONTROLS" section and are deliberately generic (not
+`chapter-*`-prefixed) since both pages' filter toggle *and* the order toggle all reuse them —
+`.filter-toggle` is a fixed `190px × 38px` box specifically so neither button changes size
+depending on which label text it's currently showing ("All" vs. "Political Philosophy" vs. "Newest
+First"), and the order toggle reuses `.filter-checkbox`'s bordered/gold-tinted icon box (with a
+sort-arrows glyph instead of a checkmark) so it visually matches the filter toggle exactly instead
+of looking like a different kind of control.
+
+- **God Valley Chapters' filter** (`.chapter-filter`) only ever offers "All" — God Valley has no
+  `Subcategory` rows (see **Upload page** above: "God Valley never uses `Subcategory`, it has
+  exactly one implicit story") — so the dropdown exists for visual/interaction consistency with
+  Writings, not because chapters are actually filterable yet.
+- **Writings' filter** (`.topic-filter`) is the real thing: `core.views.writings_category_list`
+  computes `active_topic_name` (the selected `Subcategory.name`, or `"All"`) for the toggle's
+  label, and the dropdown lists every real `Subcategory` row for that category — exactly the data
+  the old chip row (`.topic-filter-chip`, now deleted) used to render inline. Replacing the flat
+  chip row with this dropdown didn't touch the underlying filtering logic (`?topic=<slug>`) at
+  all, and the wrapper kept its original `topic-filter` class specifically so `list-filters.js`'s
+  existing `.topic-filter a` soft-nav selector and `main.js`'s `.topic-filter` skip-selector both
+  keep matching, unchanged.
+- **The order toggle** (`.order-toggle`, on both pages) flips `?order=new|old`
+  (`-chapter_number`/`chapter_number` for chapters, `-created_at`/`created_at` for Writings,
+  default `new`) on every click. The `_new_badge.html` condition on both pages had to change from
+  "is this the first item in the current (possibly filtered/reordered) list" to an identity check
+  against the actual newest item's id (`latest_id`, computed unfiltered in
+  `writings_category_list`) — the old `forloop.first`-based condition badged whatever happened to
+  be first in a *filtered* subset as "New", which could mislabel an older item as newest whenever a
+  topic filter hid the real newest one from view. Both badge conditions also gate on
+  `order == 'new'`, since a "New" pill makes no sense sitting at the bottom of an oldest-first list.
+
+**Soft-nav is scoped to just the card grid, not the whole page.** `list-filters.js`'s existing
+AJAX-swap mechanism (see the **Search** divergence bullet below) originally faded and replaced all
+of `main.page-content` on every topic-filter/pagination click — including the hero above the grid,
+which read as the whole page reloading for what's really just a list re-filtering. Both pages now
+wrap their filter controls + card grid + pagination in `<div id="list-panel">`, with the grid
+itself further wrapped in `<div id="card-grid-wrap">`. `softNavigate()` (in `list-filters.js`) fades
+and swaps only `#card-grid-wrap`'s contents; `.list-controls` (the filter toggle/dropdown and the
+order toggle) and `.pagination` are swapped instantly via `outerHTML`, no fade — so clicking a
+topic, flipping the order, or paging never fades the checkbox, the label, or the hero, only the
+cards themselves visibly cross-fade. `FILTER_LINK_SELECTOR` now also matches `.order-toggle`
+directly (it's a single link, not a container of links), so the order toggle goes through this same
+scoped soft-nav instead of `main.js`'s generic per-link full-page-fade handler — which `main.js`'s
+skip-list (`.topic-filter, .order-toggle, .pagination`) now excludes it from, for the same reason.
+Pages without a `#list-panel` (Search, Favourites, Reading List, Downloads) are unaffected — they
+still fall back to the original whole-`page-content` fade/swap.
 
 ### Archive / Concepts / Collections / About
 
@@ -514,7 +582,41 @@ problem `.stretched-link` solves for News) — so it instead reuses the `.readin
 row component from `/profile/`, wrapped in a new `.download-row` flex container that places the
 re-download `<form>` as a sibling of the row's `<a>` rather than nested inside it.
 
-### Design system: token-based, gold-on-ink
+### Content gating for anonymous visitors: blurred body + login card, News exempt
+
+Anyone can reach every page on the site — no route was put behind `login_required` for this
+feature — but an anonymous visitor's view of a Writings entry or God Valley chapter shows only the
+hero (title, category/date meta) in full; the actual `.chapter-content` body is blurred and
+overlaid with a centered login prompt. `writings_detail`/`godvalley_detail` pass
+`content_locked = not request.user.is_authenticated` into their templates, which wrap the body in
+`.chapter-content-wrap` (an `is-locked` modifier) and, when locked, include `_content_lock.html`
+right after it. **News is deliberately exempt** — `news_detail.html` has no such wrapper at all —
+since News dispatches are meant to be freely readable, unlike the flagship long-form content.
+
+`_content_lock.html` is a small reusable card (`.content-lock-card`, a fixed `170px × 170px`
+square, styled with the same gold-hairline-top / ambient-glow language as `.auth-card`) reading
+"Sign in to Read" with a single Log In button (`?next=` preserved back to the current page) — no
+"Create an account" copy or Sign Up link; those were deliberately cut down to just the one action.
+The blur itself (`.chapter-content-wrap.is-locked .chapter-content{filter:blur(6px); user-
+select:none; pointer-events:none;}`) is masked by a **radial**, not linear, vignette
+(`.chapter-content-wrap.is-locked::after`) — a top-to-bottom linear fade left the top edge of the
+blurred block looking like a hard-edged box dropped right under the hero; a radial gradient
+centered in the block fades evenly on all four sides and the corners instead, so it reads as one
+soft glow rather than a boxed cutout.
+
+**Favourite/Reading List/Download icons don't send an anonymous click straight to `/login/`
+anymore.** All three buttons' anonymous-visitor branch (`_favourite_button.html`,
+`_reading_list_button.html`, `_download_button.html`) is now `href="#content-lock"` with a
+`.js-scroll-to-lock` class — a real same-page anchor (works with JS disabled) rather than a link
+off the page. `static/js/content-lock.js` (registered site-wide in `base.html`, next to
+`favourite.js`/`reading-list.js`) intercepts that click, smooth-scrolls `#content-lock` (the lock
+card) to the vertical center of the viewport, and — only once the scroll has actually settled
+(listens for the `scrollend` event, falling back to a ~700ms timeout on browsers without it, so the
+two effects don't fire on top of each other and look like the card is being jerked around) — pops
+the card's Log In button via a `contentLockPop` keyframe (a slow, ~1.1s, gentle scale pulse, not a
+sharp snap) so it's obvious why the page just moved.
+
+## Design system: token-based, gold-on-ink
 
 All visual styling lives in one `static/css/style.css` (no frontend build step — plain CSS,
 self-hosted `@font-face` fonts from `static/fonts/`). The palette/type pairing is a deliberate
@@ -582,9 +684,11 @@ deliberately introduced. Trust the code over the doc on these points:
   `/search/` (`core.views.search`, title-only match across all published content, both Writings and
   God Valley) — it lives as a static, centered search bar at the top of the homepage
   (`templates/home.html`'s `.home-search` section), not in the navbar; there is no search input in
-  `.navbar` itself. `godvalley_chapters`'s own `?q=` chapter-title filter is unchanged and still
-  separate — a narrower, page-scoped search that coexists with the site-wide one rather than being
-  replaced by it.
+  `.navbar` itself. `godvalley_chapters`'s own `?q=` chapter-title filter was a narrower,
+  page-scoped search that coexisted with the site-wide one rather than being replaced by it — its
+  input was later removed from the page in favor of the filter/order controls described in **List
+  filtering and ordering** above (the view still honors `?q=` if reached directly by URL, so it's
+  dormant rather than deleted outright).
 - **Visitor accounts**: scope (and this doc's original framing) said single-author with no visitor
   accounts and Django admin as the only authenticated surface. **That idea is cancelled, not just
   diverged from** — user accounts are now a permanent, intentional part of the site, not a

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 
-<section class="hero">
+<section class="hero hero-compact">
     <div class="hero-actions">
         {% include '_favourite_button.html' with content=chapter is_favourited=is_favourited %}
         {% include '_reading_list_button.html' with content=chapter is_in_reading_list=is_in_reading_list %}
@@ -15,8 +15,11 @@
 </section>
 
 <section class="archive">
-    <div class="chapter-content">
-        {{ chapter.body|linebreaks }}
+    <div class="chapter-content-wrap{% if content_locked %} is-locked{% endif %}">
+        <div class="chapter-content">
+            {{ chapter.body|linebreaks }}
+        </div>
+        {% if content_locked %}{% include '_content_lock.html' %}{% endif %}
     </div>
 
     <div class="chapter-nav">

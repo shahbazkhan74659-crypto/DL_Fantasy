@@ -26,6 +26,24 @@ WRITINGS_CATEGORIES = (
     Content.Category.MYTHOLOGY,
 )
 
+WRITINGS_CARDS = (
+    {
+        'category': Content.Category.FICTION, 'icon': 'fiction',
+        'description': 'Short stories and one-offs outside the Valley.',
+        'noun_singular': 'story', 'noun_plural': 'stories',
+    },
+    {
+        'category': Content.Category.PHILOSOPHY, 'icon': 'philosophy',
+        'description': 'Essays, arguments, and worldview pieces.',
+        'noun_singular': 'essay', 'noun_plural': 'essays',
+    },
+    {
+        'category': Content.Category.MYTHOLOGY, 'icon': 'mythology',
+        'description': 'Myths, cosmology, and inherited lore.',
+        'noun_singular': 'myth', 'noun_plural': 'myths',
+    },
+)
+
 PAGE_SIZE = 12
 
 
@@ -60,13 +78,46 @@ def writings(request):
     for entry in entries:
         if highlights[entry.category] is None:
             highlights[entry.category] = entry
-    return render(request, 'writings.html', {'highlights': highlights})
+
+    counts = dict(
+        Content.objects.filter(category__in=WRITINGS_CATEGORIES, is_published=True)
+        .values_list('category').annotate(n=Count('id')).values_list('category', 'n')
+    )
+    cards = []
+    for card in WRITINGS_CARDS:
+        category = card['category']
+        entry = highlights[category]
+        count = counts.get(category, 0)
+        cards.append({
+            **card,
+            'label': category.label,
+            'url': reverse('writings_category_list', args=[category]),
+            'count': count,
+            'noun': card['noun_singular'] if count == 1 else card['noun_plural'],
+            'body_text': (entry.excerpt if entry and entry.excerpt else entry.title) if entry else card['description'],
+        })
+    return render(request, 'writings.html', {'cards': cards, 'highlights': highlights})
 
 
 def writings_category_list(request, category):
     if category not in WRITINGS_CATEGORIES:
         raise Http404("Unknown writings category")
-    entries = Content.objects.filter(category=category, is_published=True).order_by('-created_at')
+
+    order = request.GET.get('order', 'new')
+    if order not in ('new', 'old'):
+        order = 'new'
+
+    entries = Content.objects.filter(
+        category=category, is_published=True,
+    ).order_by('-created_at' if order == 'new' else 'created_at')
+
+    # The truly newest item in the whole (unfiltered) category — computed separately from
+    # `entries` so the "New" badge always marks the actual newest entry, not just the newest
+    # within whatever topic filter happens to be selected (a topic-filtered "newest" would
+    # otherwise get badged even though a genuinely newer entry exists outside that filter).
+    latest_id = Content.objects.filter(
+        category=category, is_published=True,
+    ).order_by('-created_at').values_list('id', flat=True).first()
 
     subcategories = Subcategory.objects.filter(parent_category=category)
     active_subcategory = None
@@ -82,6 +133,9 @@ def writings_category_list(request, category):
         'entries': _paginate(request, entries),
         'subcategories': subcategories,
         'active_topic': active_subcategory.slug if active_subcategory else '',
+        'active_topic_name': active_subcategory.name if active_subcategory else 'All',
+        'order': order,
+        'latest_id': latest_id,
     })
 
 
@@ -115,6 +169,7 @@ def writings_detail(request, category, slug):
         'is_favourited': _is_favourited(request, entry),
         'is_in_reading_list': _is_in_reading_list(request, entry),
         'page_cover_url': entry.cover_url,
+        'content_locked': not request.user.is_authenticated,
     })
 
 
@@ -123,15 +178,21 @@ def godvalley_list(request):
 
 
 def godvalley_chapters(request):
+    order = request.GET.get('order', 'new')
+    if order not in ('new', 'old'):
+        order = 'new'
+
     chapters = Content.objects.filter(
         category=Content.Category.GODVALLEY, is_published=True,
-    ).order_by('-chapter_number')
+    ).order_by('-chapter_number' if order == 'new' else 'chapter_number')
 
     query = request.GET.get('q', '').strip()
     if query:
         chapters = chapters.filter(title__icontains=query)
 
-    return render(request, 'godvalley_chapters.html', {'chapters': _paginate(request, chapters), 'query': query})
+    return render(request, 'godvalley_chapters.html', {
+        'chapters': _paginate(request, chapters), 'query': query, 'order': order,
+    })
 
 
 def godvalley_detail(request, slug):
@@ -157,6 +218,7 @@ def godvalley_detail(request, slug):
         'is_favourited': _is_favourited(request, chapter),
         'is_in_reading_list': _is_in_reading_list(request, chapter),
         'page_cover_url': chapter.cover_url,
+        'content_locked': not request.user.is_authenticated,
     })
 
 

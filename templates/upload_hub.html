@@ -14,9 +14,9 @@
     <div class="archive-grid">
         {% for card in cards %}
         <a href="{{ card.url }}" class="archive-card upload-hub-card">
-            <span class="upload-hub-eyebrow">{{ card.eyebrow }}</span>
+            <span class="hub-card-eyebrow">{{ card.eyebrow }}</span>
 
-            <span class="upload-hub-icon-ring">
+            <span class="hub-card-icon-ring">
                 {% if card.icon == 'godvalley' %}
                 <svg viewBox="0 0 48 48" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                     <circle cx="24" cy="24" r="10"></circle>
@@ -55,12 +55,12 @@
             </span>
 
             <h3>{{ card.label }}</h3>
-            <p class="upload-hub-desc">{{ card.description }}</p>
+            <p class="hub-card-desc">{{ card.description }}</p>
 
-            <span class="upload-hub-footer">
-                <span class="upload-hub-stat">{% if card.count %}{{ card.count }} {{ card.noun }}{% else %}Nothing uploaded yet{% endif %}</span>
-                <span class="upload-hub-dot">&middot;</span>
-                <span class="upload-hub-cta">Open Upload <span class="upload-hub-cta-arrow">&rarr;</span></span>
+            <span class="hub-card-footer">
+                <span class="hub-card-stat">{% if card.count %}{{ card.count }} {{ card.noun }}{% else %}Nothing uploaded yet{% endif %}</span>
+                <span class="hub-card-dot">&middot;</span>
+                <span class="hub-card-cta">Open Upload <span class="hub-card-cta-arrow">&rarr;</span></span>
             </span>
         </a>
         {% endfor %}

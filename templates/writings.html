@@ -11,32 +11,45 @@
 <section class="archive">
     <h2>Grand Archive of Thoughts</h2>
     <div class="archive-grid">
-        {% url 'writings_category_list' 'fiction' as fiction_url %}
-        {% with entry=highlights.fiction %}
-        {% if entry %}
-        {% include '_archive_card.html' with url=fiction_url title_text="Fiction" body_text=entry.excerpt|default:entry.title %}
-        {% else %}
-        {% include '_archive_card.html' with url=fiction_url title_text="Fiction" body_text="Short stories, one-offs." %}
-        {% endif %}
-        {% endwith %}
+        {% for card in cards %}
+        <a href="{{ card.url }}" class="archive-card writings-hub-card">
+            <span class="hub-card-eyebrow">Writings</span>
 
-        {% url 'writings_category_list' 'philosophy' as philosophy_url %}
-        {% with entry=highlights.philosophy %}
-        {% if entry %}
-        {% include '_archive_card.html' with url=philosophy_url title_text="Philosophy" body_text=entry.excerpt|default:entry.title %}
-        {% else %}
-        {% include '_archive_card.html' with url=philosophy_url title_text="Philosophy" body_text="Ideas, worldview pieces." %}
-        {% endif %}
-        {% endwith %}
+            <span class="hub-card-icon-ring">
+                {% if card.icon == 'fiction' %}
+                <svg viewBox="0 0 48 48" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M37 9c-9 1-18 7-22 20l-3 9 9-3C34 31 40 22 41 13"></path>
+                    <path d="M37 9c2 4 2 9-1 13"></path>
+                    <path d="M15 33l7-7"></path>
+                </svg>
+                {% elif card.icon == 'philosophy' %}
+                <svg viewBox="0 0 48 48" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M10 10h28"></path>
+                    <path d="M12 14h24"></path>
+                    <path d="M16 14v20"></path>
+                    <path d="M24 14v20"></path>
+                    <path d="M32 14v20"></path>
+                    <path d="M12 34h24"></path>
+                    <path d="M10 38h28"></path>
+                </svg>
+                {% elif card.icon == 'mythology' %}
+                <svg viewBox="0 0 48 48" width="30" height="30" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M33.7 16.9A13 13 0 1 0 33.7 31.1"></path>
+                    <path d="M33.7 16.9l6.7-2.6-1.1 7.1z" fill="currentColor" stroke="none"></path>
+                </svg>
+                {% endif %}
+            </span>
 
-        {% url 'writings_category_list' 'mythology' as mythology_url %}
-        {% with entry=highlights.mythology %}
-        {% if entry %}
-        {% include '_archive_card.html' with url=mythology_url title_text="Mythology" body_text=entry.excerpt|default:entry.title %}
-        {% else %}
-        {% include '_archive_card.html' with url=mythology_url title_text="Mythology" body_text="Myths, cosmology, lore." %}
-        {% endif %}
-        {% endwith %}
+            <h3>{{ card.label }}</h3>
+            <p class="hub-card-desc">{{ card.body_text }}</p>
+
+            <span class="hub-card-footer">
+                <span class="hub-card-stat">{% if card.count %}{{ card.count }} {{ card.noun }}{% else %}Nothing here yet{% endif %}</span>
+                <span class="hub-card-dot">&middot;</span>
+                <span class="hub-card-cta">Explore <span class="hub-card-cta-arrow">&rarr;</span></span>
+            </span>
+        </a>
+        {% endfor %}
     </div>
 </section>
 

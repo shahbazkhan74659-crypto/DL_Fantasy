@@ -8,18 +8,46 @@
 </section>
 
 <section class="archive">
-    {% if subcategories %}
-    <div class="topic-filter">
-        <a href="{% url 'writings_category_list' category %}" class="topic-filter-chip{% if not active_topic %} is-active{% endif %}">All</a>
-        {% for sub in subcategories %}
-        <a href="{% url 'writings_category_list' category %}?topic={{ sub.slug }}" class="topic-filter-chip{% if active_topic == sub.slug %} is-active{% endif %}">{{ sub.name }}</a>
-        {% endfor %}
+    <div id="list-panel">
+    <div class="list-controls">
+        {% if subcategories %}
+        <div class="topic-filter card-menu">
+            <button type="button" class="control-btn filter-toggle card-menu-toggle" aria-haspopup="true" aria-expanded="false">
+                <span class="filter-checkbox" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"></path></svg>
+                </span>
+                <span class="filter-label">{{ active_topic_name }}</span>
+                <svg class="filter-chevron" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+            </button>
+            <div class="filter-dropdown card-menu-dropdown" role="menu">
+                <a href="{% url 'writings_category_list' category %}{% if order == 'old' %}?order=old{% endif %}" class="card-menu-item{% if not active_topic %} is-active{% endif %}" role="menuitem">All</a>
+                {% for sub in subcategories %}
+                <a href="{% url 'writings_category_list' category %}?topic={{ sub.slug }}{% if order == 'old' %}&order=old{% endif %}" class="card-menu-item{% if active_topic == sub.slug %} is-active{% endif %}" role="menuitem">{{ sub.name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <a
+            href="?{% if active_topic %}topic={{ active_topic|urlencode }}&{% endif %}order={% if order == 'old' %}new{% else %}old{% endif %}"
+            class="control-btn filter-toggle order-toggle"
+            aria-label="{% if order == 'old' %}Switch to newest first{% else %}Switch to oldest first{% endif %}"
+        >
+            <span class="filter-checkbox" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M7 4v16"></path><path d="M3.5 8l3.5-4 3.5 4"></path>
+                    <path d="M17 20V4"></path><path d="M13.5 16l3.5 4 3.5-4"></path>
+                </svg>
+            </span>
+            <span class="filter-label">{% if order == 'old' %}Oldest First{% else %}Newest First{% endif %}</span>
+        </a>
     </div>
-    {% endif %}
+
+    <div id="card-grid-wrap">
     <div class="archive-grid">
         {% for entry in entries %}
         {% url 'writings_detail' category entry.slug as entry_url %}
-        {% if forloop.first and entries.number == 1 %}
+        {% if entry.id == latest_id and order == 'new' %}
         {% include '_archive_card.html' with url=entry_url title_text=entry.title meta_text=entry.created_at|date:"F j, Y" body_text=entry.excerpt cover_url=entry.cover_url show_new_badge=True %}
         {% else %}
         {% include '_archive_card.html' with url=entry_url title_text=entry.title meta_text=entry.created_at|date:"F j, Y" body_text=entry.excerpt cover_url=entry.cover_url %}
@@ -28,7 +56,9 @@
         <p>Nothing here yet — check back soon.</p>
         {% endfor %}
     </div>
-    {% include '_pagination.html' with page_obj=entries topic=active_topic %}
+    </div>
+    {% include '_pagination.html' with page_obj=entries topic=active_topic order=order %}
+    </div>
 </section>
 
 {% endblock %}

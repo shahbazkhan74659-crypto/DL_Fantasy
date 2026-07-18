@@ -21,7 +21,7 @@ whatever page it was clicked from (the `next` field below).
     </button>
 </form>
 {% else %}
-<a href="{% url 'login' %}?next={{ request.path|urlencode }}" class="icon-btn favourite-btn" aria-label="Log in to add to favourites">
+<a href="#content-lock" class="icon-btn favourite-btn js-scroll-to-lock" aria-label="Log in to add to favourites">
     <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.35-9.5-9A5.5 5.5 0 0 1 12 6a5.5 5.5 0 0 1 9.5 5c-2.5 4.65-9.5 9-9.5 9z"></path></svg>
 </a>
 {% endif %}
