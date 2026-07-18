@@ -59,8 +59,7 @@ SPOTLIGHT_SIZE = 6
 
 def home(request):
     entries = Content.objects.filter(is_published=True).order_by('-created_at')
-    spotlight = Content.objects.filter(is_published=True).order_by('?')[:SPOTLIGHT_SIZE]
-    return render(request, 'home.html', {'entries': _paginate(request, entries), 'spotlight': spotlight})
+    return render(request, 'home.html', {'entries': _paginate(request, entries)})
 
 
 def shuffle_spotlight(request):
@@ -289,14 +288,35 @@ def downloads(request):
 
 def search(request):
     query = request.GET.get('q', '').strip()
-    results = Content.objects.none()
+    results = []
+    spotlight = Content.objects.none()
     if query:
-        results = Content.objects.filter(
-            is_published=True, title__icontains=query,
-        ).order_by('-created_at')
+        content_matches = Content.objects.filter(is_published=True, title__icontains=query)
+        collection_matches = Collection.objects.filter(is_published=True, title__icontains=query)
+        results = sorted(
+            [
+                {
+                    'url': entry.get_absolute_url(), 'title': entry.title,
+                    'meta': entry.get_category_display(), 'excerpt': entry.excerpt,
+                    'cover_url': entry.cover_url, 'created_at': entry.created_at,
+                }
+                for entry in content_matches
+            ] + [
+                {
+                    'url': collection.get_absolute_url(), 'title': collection.title,
+                    'meta': 'Collection', 'excerpt': collection.description,
+                    'cover_url': collection.cover_url, 'created_at': collection.created_at,
+                }
+                for collection in collection_matches
+            ],
+            key=lambda item: item['created_at'], reverse=True,
+        )
+    else:
+        spotlight = Content.objects.filter(is_published=True).order_by('?')[:SPOTLIGHT_SIZE]
     return render(request, 'search.html', {
         'query': query,
         'results': _paginate(request, results),
+        'spotlight': spotlight,
     })
 
 

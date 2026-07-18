@@ -1,32 +1,5 @@
 {% extends 'base.html' %}
-{% load static %}
 {% block content %}
-
-<section class="home-search">
-    <form class="home-search-form" action="{% url 'search' %}" method="get">
-        <span class="section-tag">Search the Archive</span>
-        <div class="home-search-field">
-            <input type="text" name="q" placeholder="Search titles across Writings and The God Valley…" value="{{ request.GET.q }}" aria-label="Search the archive">
-            <button type="submit" class="btn">Search</button>
-        </div>
-    </form>
-</section>
-
-<section class="archive home-spotlight">
-    <h2>Discover Something New</h2>
-    <div class="spotlight-row" id="spotlight-grid">
-        {% for entry in spotlight %}
-        <a href="{{ entry.get_absolute_url }}" class="spotlight-item{% if entry.cover_url %} has-cover{% endif %}"{% if entry.cover_url %} style="background-image:url('{{ entry.cover_url }}')"{% endif %}><span>{{ entry.title }}</span></a>
-        {% empty %}
-        <p>No entries yet — check back soon.</p>
-        {% endfor %}
-    </div>
-    {% if spotlight %}
-    <div class="home-spotlight-actions">
-        <button type="button" id="spotlight-shuffle-btn" class="btn-outline" data-shuffle-url="{% url 'shuffle_spotlight' %}">Refresh</button>
-    </div>
-    {% endif %}
-</section>
 
 <section class="archive">
     <h2>Explore</h2>
@@ -40,7 +13,4 @@
     {% include '_pagination.html' with page_obj=entries %}
 </section>
 
-{% endblock %}
-{% block extra_js %}
-<script src="{% static 'js/home-spotlight.js' %}"></script>
 {% endblock %}

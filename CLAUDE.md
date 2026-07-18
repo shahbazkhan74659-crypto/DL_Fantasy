@@ -663,11 +663,18 @@ self-hosted `@font-face` fonts from `static/fonts/`). The palette/type pairing i
 choice, not a template default: near-black ink background (`--bg-primary #050505`) with a gold
 accent (`--gold #d4af37`) evoking illuminated-manuscript/divine imagery that fits "The God Valley"'s
 gods-and-power themes, paired with `'Cormorant Garamond'` (serif, headings/display, used sparingly)
-and `'Inter'` (sans, body/UI, weights 300–700 self-hosted). Everything else is driven off `:root`
+and `'Inter'` (sans, body/UI). Every file in `static/fonts/` is registered via `@font-face` with
+`font-display:swap` — Cormorant Garamond weights 300–700 with true italics, and Inter weights
+100–900 with true italics in all three of its optical-size cuts (18pt/24pt/28pt as separate
+families) — so no weight or italic is ever browser-synthesized, and unused faces cost nothing
+(browsers only download a face a rule actually uses). Rules never name a font family directly;
+they go through `:root` font tokens: `--font-serif`, `--font-sans` (Inter's 18pt cut — the
+default, correct for the site's all-≤1.1rem sans text), and `--font-sans-mid`/`--font-sans-display`
+(the 24pt/28pt cuts, for any future sans text at ~1.4rem+/~1.75rem+ respectively). Everything else is driven off `:root`
 custom properties: a spacing scale (`--space-2xs` through `--space-3xl`), radius tokens
 (`--radius-sm`/`--radius-md`), a shared easing curve (`--ease`), shadow tokens (`--shadow-card`,
 `--shadow-lift`), and `--gutter` — a `clamp()`-based side padding used on `.navbar`/`.hero`/
-`.archive`/`footer`/`.home-search` so content stays close to the viewport edge on wide screens
+`.archive`/`footer` so content stays close to the viewport edge on wide screens
 instead of an unbounded percentage-based gutter growing forever. Buttons/cards reuse
 `.btn`/`.btn-outline`/`.archive-card` consistently across pages rather than one-off per-template
 styles. The site respects `prefers-reduced-motion` (disables hero/card entrance animations and the
@@ -716,16 +723,22 @@ deliberately introduced. Trust the code over the doc on these points:
 
 - **Nav/pages**: scope says `Home / Writings / God Valley / About` and explicitly says to drop
   Archive/Concepts from the old project's nav. Current nav is
-  `Home / Writings / Collections / Archive` — the God Valley nav link was replaced with
+  `Home / Explore / Writings / Collections / Archive` (Explore links to `/search/`) — the God
+  Valley nav link was replaced with
   Collections once that became a real feature; God Valley stays reachable via Archive (and the
   homepage). Concepts is still a placeholder; Collections is not (see **Collections**).
 - **Writings sub-categories**: scope says Fiction / Essays / Poetry. Current `Content.Category` is
   Fiction / Philosophy / Mythology.
-- **Search**: scope says no search feature at launch. Site-wide search is now live, posting to
-  `/search/` (`core.views.search`, title-only match across all published content, both Writings and
-  God Valley) — it lives as a static, centered search bar at the top of the homepage
-  (`templates/home.html`'s `.home-search` section), not in the navbar; there is no search input in
-  `.navbar` itself. `godvalley_chapters`'s own `?q=` chapter-title filter was a narrower,
+- **Search**: scope says no search feature at launch. Site-wide search is now live at `/search/`
+  (`core.views.search`, title-only match across all published content, both Writings and God
+  Valley), reached via the navbar's `Explore` link (second slot, after Home). The search page has
+  no hero/heading — its only chrome is the centered `.home-search` bar (originally built for the
+  homepage, later moved here verbatim; the `home-search-*` class names kept their original names
+  on purpose). The homepage no longer has a search bar, and there is no search *input* in
+  `.navbar` either, just the plain Explore link. The form also carries the `search-box` class —
+  purely as `list-filters.js`'s `SEARCH_FORM_SELECTOR` soft-nav hook, since the old plain
+  `.search-box` CSS was deleted when the styled bar replaced that box. The input uses
+  `autocomplete="off"` — the browser's native remembered-terms dropdown looked like a site bug. `godvalley_chapters`'s own `?q=` chapter-title filter was a narrower,
   page-scoped search that coexisted with the site-wide one rather than being replaced by it — its
   input was later removed from the page in favor of the filter/order controls described in **List
   filtering and ordering** above (the view still honors `?q=` if reached directly by URL, so it's

@@ -14,6 +14,28 @@ window.addEventListener("scroll", () => {
     }
 });
 
+// NAVBAR HEIGHT SYNC
+//
+// .navbar is position:fixed (always on screen), so it no longer reserves its own space in
+// normal flow — body's padding-top (static/style.css) stands in for that space via the
+// --navbar-h custom property. The navbar's real height isn't constant (the 900px breakpoint
+// stacks it into multiple rows), so a ResizeObserver keeps the property correct across
+// breakpoint changes and font-loading reflows, not just a one-time measurement at load.
+
+const navbarForHeightSync = document.querySelector(".navbar");
+
+if(navbarForHeightSync){
+
+    const syncNavbarHeight = () => {
+
+        document.documentElement.style.setProperty("--navbar-h", `${navbarForHeightSync.offsetHeight}px`);
+    };
+
+    syncNavbarHeight();
+
+    new ResizeObserver(syncNavbarHeight).observe(navbarForHeightSync);
+}
+
 // PAGE-CONTENT-DEPENDENT EFFECTS
 //
 // Bundled into one re-runnable function because list-filters.js swaps

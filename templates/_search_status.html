@@ -1,0 +1,9 @@
+{% if query %}
+<div class="search-status">
+    {% if results.paginator.count %}
+    <p>{{ results.paginator.count }} result{{ results.paginator.count|pluralize }} found for &ldquo;<strong>{{ query }}</strong>&rdquo;.</p>
+    {% else %}
+    <p>No results found for &ldquo;<strong>{{ query }}</strong>&rdquo;. Check your spelling and try again.</p>
+    {% endif %}
+</div>
+{% endif %}

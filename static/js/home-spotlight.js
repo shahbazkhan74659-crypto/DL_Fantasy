@@ -1,7 +1,7 @@
-// HOME SPOTLIGHT SHUFFLE — "Discover Something New" row on the homepage
+// SPOTLIGHT SHUFFLE — "Discover Something New" row on the search page
 //
 // The row is already randomized server-side on every page load (Content.objects.order_by('?')
-// in core.views.home); this button re-rolls the same random set in place via fetch, without a
+// in core.views.search); this button re-rolls the same random set in place via fetch, without a
 // full page reload, using core.views.shuffle_spotlight.
 
 document.addEventListener('click', (e) => {

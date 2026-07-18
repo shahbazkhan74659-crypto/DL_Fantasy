@@ -1,30 +1,49 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}Search | DL Fantasy{% endblock %}
 {% block content %}
 
-<section class="hero hero-compact">
-    <div class="hero-content parallax">
-        <h1>Search</h1>
-    </div>
+<section class="home-search">
+    <form class="home-search-form search-box" action="{% url 'search' %}" method="get">
+        <span class="section-tag">Search the Archive</span>
+        <div class="home-search-field">
+            <input type="text" name="q" autocomplete="off" placeholder="Search titles across Writings and The God Valley…" value="{{ request.GET.q }}" aria-label="Search the archive">
+            <button type="submit" class="btn">Search</button>
+        </div>
+    </form>
 </section>
 
-<section class="archive">
-    <form class="search-box" method="get" action="{% url 'search' %}">
-        <input type="text" name="q" placeholder="Search the archive…" value="{{ query }}">
-    </form>
+<div id="list-panel">
+{% include '_search_status.html' with query=query results=results %}
+{% if not query %}
+<section class="archive home-spotlight">
+    <h2>Discover Something New</h2>
+    <div class="spotlight-row" id="spotlight-grid">
+        {% for entry in spotlight %}
+        <a href="{{ entry.get_absolute_url }}" class="spotlight-item{% if entry.cover_url %} has-cover{% endif %}"{% if entry.cover_url %} style="background-image:url('{{ entry.cover_url }}')"{% endif %}><span>{{ entry.title }}</span></a>
+        {% empty %}
+        <p>No entries yet — check back soon.</p>
+        {% endfor %}
+    </div>
+    {% if spotlight %}
+    <div class="home-spotlight-actions">
+        <button type="button" id="spotlight-shuffle-btn" class="btn-outline" data-shuffle-url="{% url 'shuffle_spotlight' %}">Refresh</button>
+    </div>
+    {% endif %}
+</section>
+{% endif %}
 
+<section class="archive">
     <div class="archive-grid">
         {% for entry in results %}
-        {% include '_archive_card.html' with url=entry.get_absolute_url title_text=entry.title meta_text=entry.get_category_display body_text=entry.excerpt cover_url=entry.cover_url %}
-        {% empty %}
-        {% if query %}
-        <p>No results for "{{ query }}".</p>
-        {% else %}
-        <p>Enter a search term above.</p>
-        {% endif %}
+        {% include '_archive_card.html' with url=entry.url title_text=entry.title meta_text=entry.meta body_text=entry.excerpt cover_url=entry.cover_url %}
         {% endfor %}
     </div>
     {% include '_pagination.html' with page_obj=results query=query %}
 </section>
+</div>
 
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/home-spotlight.js' %}"></script>
 {% endblock %}
