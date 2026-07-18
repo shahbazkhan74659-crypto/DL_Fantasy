@@ -1,12 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count
+from django.db import transaction
+from django.db.models import Count, Max
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
-from .forms import FictionUploadForm, GodValleyUploadForm, MythologyUploadForm, PhilosophyUploadForm
-from .models import Content
+from .forms import (
+    CollectionForm, FictionUploadForm, GodValleyUploadForm, MythologyUploadForm,
+    PhilosophyUploadForm,
+)
+from .models import Collection, CollectionItem, Content
 
 CARDS = (
     {
@@ -34,6 +38,13 @@ CARDS = (
         'noun_singular': 'myth', 'noun_plural': 'myths',
     },
 )
+
+COLLECTIONS_CARD = {
+    'label': 'Collections', 'url_name': 'upload_collections',
+    'icon': 'collections', 'eyebrow': 'Curation',
+    'description': 'Curate anthologies from anything already published.',
+    'noun_singular': 'collection', 'noun_plural': 'collections',
+}
 
 FORM_CLASSES = {
     Content.Category.GODVALLEY: GodValleyUploadForm,
@@ -66,6 +77,13 @@ def upload_hub(request):
         count = counts.get(card['category'], 0)
         noun = card['noun_singular'] if count == 1 else card['noun_plural']
         cards.append({**card, 'url': reverse(card['url_name']), 'count': count, 'noun': noun})
+    collection_count = Collection.objects.count()
+    cards.append({
+        **COLLECTIONS_CARD,
+        'url': reverse(COLLECTIONS_CARD['url_name']),
+        'count': collection_count,
+        'noun': COLLECTIONS_CARD['noun_singular'] if collection_count == 1 else COLLECTIONS_CARD['noun_plural'],
+    })
     return render(request, 'upload_hub.html', {'cards': cards})
 
 
@@ -147,3 +165,124 @@ def delete_content_cover(request, pk):
         content.cover_image.delete(save=True)
         messages.success(request, 'Cover image was deleted.')
     return redirect('edit_content', pk=pk)
+
+
+def _grouped_published_content():
+    """Published content grouped by category in CARDS order, for the collection item picker."""
+    grouped = {card['category']: [] for card in CARDS}
+    for content in Content.objects.filter(is_published=True).order_by('chapter_number', '-created_at'):
+        grouped[content.category].append(content)
+    return [
+        (card['label'], grouped[card['category']])
+        for card in CARDS if grouped[card['category']]
+    ]
+
+
+def _selected_ids(form):
+    """Content ids the picker should render checked: POSTed values on a bound (failed) submit,
+    the instance's current items when editing, empty on a fresh form."""
+    if form.is_bound:
+        return {int(v) for v in form.data.getlist('items') if v.isdigit()}
+    initial = form.fields['items'].initial
+    return {content.pk for content in initial} if initial else set()
+
+
+def _sync_collection_items(collection, selected_contents):
+    """Make the collection's items match the picker: drop unchecked, append newly checked at the
+    end (in picker display order). Kept items keep their positions — never renumbered."""
+    selected_ids = {content.pk for content in selected_contents}
+    collection.items.exclude(content_id__in=selected_ids).delete()
+    existing_ids = set(collection.items.values_list('content_id', flat=True))
+    next_position = (collection.items.aggregate(m=Max('position'))['m'] or 0) + 1
+    for _, contents in _grouped_published_content():
+        for content in contents:
+            if content.pk in selected_ids and content.pk not in existing_ids:
+                CollectionItem.objects.create(collection=collection, content=content, position=next_position)
+                next_position += 1
+
+
+@login_required
+def upload_collections(request):
+    _staff_only(request)
+    if request.method == 'POST':
+        form = CollectionForm(request.POST, request.FILES)
+        if form.is_valid():
+            collection = form.save()
+            _sync_collection_items(collection, form.cleaned_data['items'])
+            messages.success(request, f'"{collection.title}" was created.')
+            return redirect('upload_collections')
+    else:
+        form = CollectionForm()
+    existing_collections = Collection.objects.annotate(n_items=Count('items'))
+    return render(request, 'upload_collection_form.html', {
+        'form': form,
+        'heading': 'Upload — Collections',
+        'grouped_content': _grouped_published_content(),
+        'selected_ids': _selected_ids(form),
+        'existing_collections': existing_collections,
+    })
+
+
+@login_required
+def edit_collection(request, pk):
+    _staff_only(request)
+    collection = get_object_or_404(Collection, pk=pk)
+    if request.method == 'POST':
+        form = CollectionForm(request.POST, request.FILES, instance=collection)
+        if form.is_valid():
+            form.save()
+            _sync_collection_items(collection, form.cleaned_data['items'])
+            messages.success(request, f'"{collection.title}" was updated.')
+            return redirect('upload_collections')
+    else:
+        form = CollectionForm(instance=collection)
+    return render(request, 'upload_collection_edit.html', {
+        'form': form,
+        'heading': 'Edit — Collection',
+        'collection': collection,
+        'grouped_content': _grouped_published_content(),
+        'selected_ids': _selected_ids(form),
+        'ordered_items': collection.items.select_related('content'),
+    })
+
+
+@login_required
+def move_collection_item(request, pk):
+    if not request.user.is_staff or request.method != 'POST':
+        raise Http404
+    item = get_object_or_404(CollectionItem, pk=pk)
+    direction = request.POST.get('direction')
+    if direction == 'up':
+        neighbour = item.collection.items.filter(position__lt=item.position).order_by('-position').first()
+    elif direction == 'down':
+        neighbour = item.collection.items.filter(position__gt=item.position).order_by('position').first()
+    else:
+        neighbour = None
+    if neighbour:
+        with transaction.atomic():
+            item.position, neighbour.position = neighbour.position, item.position
+            item.save(update_fields=['position'])
+            neighbour.save(update_fields=['position'])
+    return redirect('edit_collection', pk=item.collection_id)
+
+
+@login_required
+def delete_collection(request, pk):
+    if not request.user.is_staff or request.method != 'POST':
+        raise Http404
+    collection = get_object_or_404(Collection, pk=pk)
+    title = collection.title
+    collection.delete()
+    messages.success(request, f'"{title}" was deleted.')
+    return redirect('upload_collections')
+
+
+@login_required
+def delete_collection_cover(request, pk):
+    if not request.user.is_staff or request.method != 'POST':
+        raise Http404
+    collection = get_object_or_404(Collection, pk=pk)
+    if collection.cover_image:
+        collection.cover_image.delete(save=True)
+        messages.success(request, 'Cover image was deleted.')
+    return redirect('edit_collection', pk=pk)

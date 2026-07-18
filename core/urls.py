@@ -25,6 +25,7 @@ urlpatterns = [
     path('archive/', views.archive, name='archive'),
     path('concepts/', views.concepts, name='concepts'),
     path('collections/', views.collections, name='collections'),
+    path('collections/<slug:slug>/', views.collection_detail, name='collection_detail'),
     path('about/', views.about, name='about'),
     path('news/', views.news, name='news'),
     path('news/new/', views.create_news, name='create_news'),

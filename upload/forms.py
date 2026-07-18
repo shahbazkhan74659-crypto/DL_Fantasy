@@ -1,7 +1,7 @@
 from django import forms
 from django.utils.text import slugify
 
-from .models import Content, Subcategory
+from .models import Collection, Content, Subcategory
 
 FIELD_ATTRS = {'class': 'auth-field'}
 BODY_ATTRS = {'class': 'auth-field', 'rows': 20}
@@ -102,3 +102,34 @@ class MythologyUploadForm(SubcategoryUploadForm):
     parent_category = Content.Category.MYTHOLOGY
     category_label = 'Mythology Category'
     title_label = 'Mythology Title'
+
+
+class CollectionForm(forms.ModelForm):
+    """Create/edit an author-curated anthology. Unlike the content upload forms (where
+    _handle_upload sets is_published server-side), is_published is exposed deliberately: a
+    collection is assembled across sessions, so draft-then-publish is a real workflow. The
+    `items` picker is hand-rendered in the templates as checkboxes grouped by category —
+    it still validates through this field.
+    """
+    items = forms.ModelMultipleChoiceField(
+        queryset=Content.objects.filter(is_published=True),
+        required=False,
+    )
+
+    class Meta:
+        model = Collection
+        fields = ('title', 'description', 'cover_image', 'is_published')
+        labels = {
+            'title': 'Collection Title', 'description': 'Description',
+            'cover_image': 'Cover Image', 'is_published': 'Published',
+        }
+        widgets = {
+            'title': forms.TextInput(attrs=FIELD_ATTRS),
+            'description': forms.Textarea(attrs={'class': 'auth-field', 'rows': 4}),
+            'cover_image': forms.FileInput(attrs=FIELD_ATTRS),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance.pk:
+            self.fields['items'].initial = self.instance.contents.all()

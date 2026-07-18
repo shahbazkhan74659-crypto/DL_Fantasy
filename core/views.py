@@ -6,14 +6,17 @@ from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from django.core.paginator import Paginator
-from django.db.models import Count, DurationField, ExpressionWrapper, F, Sum
+from django.db.models import Count, DurationField, ExpressionWrapper, F, Q, Sum
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
-from upload.models import Content, DownloadHistory, Favourite, News, ReadingHistory, ReadingListItem, Subcategory
+from upload.models import (
+    Collection, Content, DownloadHistory, Favourite, News, ReadingHistory, ReadingListItem,
+    Subcategory,
+)
 from users.models import DeletedUser, User, VisitSession
 
 from . import google_oauth, otp
@@ -309,7 +312,26 @@ def concepts(request):
 
 
 def collections(request):
-    return render(request, 'collections.html')
+    # Explicit order_by: the Count() annotation adds a GROUP BY, and Django strips
+    # Meta.ordering from grouped queries — without this the paginator sees an unordered
+    # queryset and page contents become non-deterministic.
+    items = Collection.objects.filter(is_published=True).annotate(
+        n_items=Count('items', filter=Q(items__content__is_published=True)),
+    ).order_by('-created_at')
+    page = _paginate(request, items)
+    for collection in page:
+        collection.meta_label = f'{collection.n_items} item' if collection.n_items == 1 else f'{collection.n_items} items'
+    return render(request, 'collections.html', {'collections': page})
+
+
+def collection_detail(request, slug):
+    collection = get_object_or_404(Collection, slug=slug, is_published=True)
+    items = collection.items.select_related('content').filter(content__is_published=True)
+    return render(request, 'collection_detail.html', {
+        'collection': collection,
+        'items': items,
+        'page_cover_url': collection.cover_url,
+    })
 
 
 def about(request):

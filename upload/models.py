@@ -94,6 +94,68 @@ class Subcategory(models.Model):
         return f'{self.get_parent_category_display()} / {self.name}'
 
 
+class Collection(models.Model):
+    """Author-curated anthology: a named, ordered grouping of any mix of Content rows across
+    categories (e.g. "Best of Philosophy", "God Valley: Arc One"). Created via the Collections
+    card on the Upload hub (or Django admin) — visitors browse them publicly at /collections/.
+    Slug is globally unique (no category axis) and generated server-side in save(), same as News.
+    """
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=220, unique=True, blank=True)
+    description = models.CharField(max_length=300, blank=True)
+    cover_image = models.ImageField(upload_to='covers/collections/%Y/%m/', blank=True, null=True)
+    is_published = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    contents = models.ManyToManyField(Content, through='CollectionItem', related_name='collections')
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.title)[:200] or 'collection'
+            slug = base
+            suffix = 1
+            while Collection.objects.filter(slug=slug).exists():
+                suffix += 1
+                slug = f'{base}-{suffix}'[:220]
+            self.slug = slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def cover_url(self):
+        return self.cover_image.url if self.cover_image else ''
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('collection_detail', args=[self.slug])
+
+
+class CollectionItem(models.Model):
+    """One Content row's membership in a Collection, at an author-chosen position. Positions are
+    only ever compared relatively (never renumbered after removals — the visitor page numbers rows
+    via forloop.counter, so gaps are invisible). CASCADE from Content matches
+    Favourite/ReadingListItem: deleting content silently drops its memberships, so the existing
+    delete_content flow keeps working.
+    """
+    collection = models.ForeignKey(Collection, on_delete=models.CASCADE, related_name='items')
+    content = models.ForeignKey(Content, on_delete=models.CASCADE, related_name='+')
+    position = models.PositiveIntegerField()
+
+    class Meta:
+        ordering = ['position']
+        constraints = [
+            models.UniqueConstraint(fields=['collection', 'content'], name='unique_content_per_collection'),
+        ]
+
+    def __str__(self):
+        return f'{self.collection} #{self.position}: {self.content}'
+
+
 class ReadingHistory(models.Model):
     """One row per (user, content) a visitor has opened — deduped so re-reading something just
     bumps `viewed_at` (auto_now, not auto_now_add) rather than piling up duplicate rows. Recorded

@@ -100,6 +100,12 @@ html{
 }
 
 body{
+    /* Sticky footer: fill the viewport and let .page-content stretch (flex:1 below), so
+       short pages (Concepts/Collections, empty lists) keep the footer at the bottom edge
+       instead of letting it ride up mid-screen. */
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
     overflow-x:hidden;
     background-color:var(--bg-primary);
     background-image:
@@ -481,7 +487,6 @@ input:focus-visible,
     display:flex;
     gap:10px;
 }
-
 .favourite-btn.is-active,
 .reading-list-btn.is-active{
     background:var(--gold-dim);
@@ -513,9 +518,10 @@ input:focus-visible,
     padding-top:var(--space-lg);
 }
 
-/* Writings hub: just a title + one-line subtitle, so hero-compact's default 90px top
-   padding (tuned for pages needing more breathing room) leaves an oversized gap before the
-   archive grid below it. Must come after .hero-compact to win the cascade (equal specificity). */
+/* Writings hub and the three category list pages: just a title (+ optional one-line
+   subtitle), so hero-compact's default 90px top padding (tuned for pages needing more
+   breathing room) leaves an oversized gap below the navbar. Must come after .hero-compact
+   to win the cascade (equal specificity). */
 .hero-writings-intro{
     padding-top:var(--space-lg);
 }
@@ -1561,6 +1567,10 @@ footer small{
    (including the checkbox icon/label) and the pagination nav update instantly, no fade.
    #list-panel is the fallback fade target on pages that have it but no #card-grid-wrap. */
 
+.page-content{
+    flex:1;
+}
+
 .page-content,
 #list-panel,
 #card-grid-wrap{
@@ -1883,6 +1893,142 @@ input[type="file"].auth-field:hover::-webkit-file-upload-button{
 .upload-existing-delete:hover{
     color:var(--danger);
     background-color:rgba(212,85,60,0.08);
+}
+
+/* COLLECTION ITEM PICKER + ORDER PANEL (upload_collection_form / upload_collection_edit) */
+
+/* Bare checkboxes (e.g. is_published) are flex items of the column-flex .auth-field-group —
+   without align-self they stretch full width and the browser paints the box centered. Scoped
+   to direct children so the picker rows' own checkboxes (centered in their row) aren't hit. */
+.auth-field-group > input[type="checkbox"]{
+    align-self:flex-start;
+    width:18px;
+    height:18px;
+    accent-color:var(--gold);
+}
+
+.upload-picker-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+}
+
+.upload-picker-count{
+    margin-left:auto;
+    flex-shrink:0;
+    white-space:nowrap;
+    color:var(--gold);
+    font-size:0.8rem;
+    letter-spacing:0.3px;
+}
+
+.upload-picker-search{
+    flex:1;
+    max-width:260px;
+    padding:8px 12px;
+    font-size:0.9rem;
+}
+
+/* The row/group classes set display:flex/block, which would beat the UA's [hidden] rule —
+   the search filter relies on the hidden attribute actually hiding them. */
+.upload-item-picker-row[hidden],
+.upload-item-picker-group[hidden]{
+    display:none;
+}
+
+.upload-item-picker{
+    max-height:320px;
+    overflow-y:auto;
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:var(--radius-md);
+    padding:var(--space-xs) var(--space-sm);
+}
+
+.upload-item-picker-group{
+    margin:var(--space-xs) 0 6px;
+    color:var(--gold);
+    font-size:0.78rem;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+}
+
+.upload-item-picker-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:6px 4px;
+    color:var(--text-secondary);
+    font-size:0.92rem;
+    cursor:pointer;
+}
+
+.upload-item-picker-row:hover{
+    color:var(--text-primary);
+}
+
+.upload-item-picker-row input{
+    accent-color:var(--gold);
+}
+
+.upload-item-picker-empty{
+    color:var(--text-muted);
+    padding:var(--space-xs) 0;
+}
+
+.collection-order-list{
+    list-style:none;
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:var(--radius-md);
+    padding:var(--space-2xs) var(--space-sm);
+}
+
+.collection-order-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:6px 4px;
+}
+
+.collection-order-row + .collection-order-row{
+    border-top:1px solid rgba(255,255,255,0.06);
+}
+
+.collection-order-number{
+    color:var(--gold);
+    font-size:0.8rem;
+    flex-shrink:0;
+}
+
+.collection-order-title{
+    flex:1;
+    color:var(--text-secondary);
+    font-size:0.92rem;
+}
+
+.collection-order-btns{
+    display:flex;
+    gap:4px;
+    flex-shrink:0;
+}
+
+.collection-order-btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:32px;
+    height:32px;
+    border-radius:var(--radius-sm);
+    color:var(--text-muted);
+    background:none;
+    border:none;
+    cursor:pointer;
+    transition:color 0.25s var(--ease), background-color 0.25s var(--ease);
+}
+
+.collection-order-btn:hover{
+    color:var(--gold);
+    background-color:rgba(212,175,55,0.08);
 }
 
 @media(max-width:900px){

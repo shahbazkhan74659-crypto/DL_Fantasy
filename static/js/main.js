@@ -108,8 +108,10 @@ function initPageEffects() {
 
         // Skip topic-filter chips, the order toggle, pagination links, and in-page search
         // boxes — list-filters.js handles those itself via a delegated listener, swapping
-        // content in place instead of doing a full page navigation.
-        if(link.closest(".topic-filter, .order-toggle, .pagination")){
+        // content in place instead of doing a full page navigation. Smart-back links are
+        // skipped too: back-link.js calls history.back() on them, and scheduling
+        // window.location.href on top of that races the two navigations.
+        if(link.closest(".topic-filter, .order-toggle, .pagination, [data-smart-back]")){
 
             return;
         }

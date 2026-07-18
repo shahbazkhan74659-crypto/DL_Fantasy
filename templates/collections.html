@@ -2,12 +2,22 @@
 {% block title %}Collections | DL Fantasy{% endblock %}
 {% block content %}
 
-<section class="hero">
+<section class="hero hero-compact hero-writings-intro">
     <div class="hero-content parallax">
-        <h1>
-            Collections
-        </h1>
+        <h1>Collections</h1>
+        <p>Anthologies, compiled fragments, and aggregated contextual logs.</p>
     </div>
+</section>
+
+<section class="archive">
+    <div class="archive-grid">
+        {% for collection in collections %}
+        {% include '_archive_card.html' with url=collection.get_absolute_url title_text=collection.title meta_text=collection.meta_label body_text=collection.description cover_url=collection.cover_url %}
+        {% empty %}
+        <p>Nothing here yet — check back soon.</p>
+        {% endfor %}
+    </div>
+    {% include '_pagination.html' with page_obj=collections %}
 </section>
 
 {% endblock %}

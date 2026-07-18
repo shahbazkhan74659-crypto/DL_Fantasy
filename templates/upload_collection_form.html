@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}{{ heading }} | DL Fantasy{% endblock %}
+{% block content %}
+
+<section class="hero hero-compact upload-hero">
+    <div class="hero-content parallax">
+        <h1>{{ heading }}</h1>
+    </div>
+</section>
+
+<section class="archive">
+    {% if messages %}
+    <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="upload-layout">
+        <div class="upload-form-col">
+            <form class="auth-form upload-form" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <p class="form-error">{{ form.non_field_errors|join:", " }}</p>
+                {% endif %}
+
+                {% for field in form %}
+                {% if field.name != 'items' %}
+                <div class="auth-field-group">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    <p class="form-error">{{ field.errors|join:", " }}</p>
+                </div>
+                {% endif %}
+                {% endfor %}
+
+                <div class="auth-field-group">
+                    <div class="upload-picker-head">
+                        <label>Items</label>
+                        <span class="upload-picker-count">{{ selected_ids|length }} selected</span>
+                        <input type="search" class="auth-field upload-picker-search" placeholder="Search items&hellip;" aria-label="Search items">
+                    </div>
+                    <div class="upload-item-picker">
+                        {% for group_label, contents in grouped_content %}
+                        <p class="upload-item-picker-group">{{ group_label }}</p>
+                        {% for content in contents %}
+                        <label class="upload-item-picker-row">
+                            <input type="checkbox" name="items" value="{{ content.pk }}"{% if content.pk in selected_ids %} checked{% endif %}>
+                            <span>{{ content }}</span>
+                        </label>
+                        {% endfor %}
+                        {% empty %}
+                        <p class="upload-item-picker-empty">Nothing published yet to collect.</p>
+                        {% endfor %}
+                        <p class="upload-item-picker-empty upload-picker-no-results" hidden>No items match your search.</p>
+                    </div>
+                    <p class="form-error">{{ form.items.errors|join:", " }}</p>
+                </div>
+
+                <button type="submit" class="btn">Create Collection</button>
+            </form>
+        </div>
+
+        <div class="upload-list-col">
+            <h2 class="upload-list-heading">Existing Collections</h2>
+            <ul class="upload-existing-list">
+                {% for collection in existing_collections %}
+                <li class="upload-existing-item">
+                    <a href="{{ collection.get_absolute_url }}" class="upload-existing-link stretched-link">
+                        <span class="upload-existing-title">
+                            {{ collection.title }}
+                            <span class="upload-existing-tag">{{ collection.n_items }} item{{ collection.n_items|pluralize }}</span>
+                            {% if not collection.is_published %}<span class="upload-existing-tag">Draft</span>{% endif %}
+                        </span>
+                        <span class="upload-existing-date">{{ collection.created_at|date:"M j, Y" }}</span>
+                    </a>
+                    <div class="upload-existing-actions">
+                        <a href="{% url 'edit_collection' collection.pk %}" class="upload-existing-edit" aria-label="Edit {{ collection.title }}">
+                            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2 2 0 0 0 0-2.83l-1.17-1.17a2 2 0 0 0-2.83 0L4 16v4z"></path><path d="M13.5 6.5l4 4"></path></svg>
+                        </a>
+                        <form method="post" action="{% url 'delete_collection' collection.pk %}" class="upload-existing-delete-form">
+                            {% csrf_token %}
+                            <button
+                                type="submit"
+                                class="upload-existing-delete"
+                                aria-label="Delete {{ collection.title }}"
+                                data-confirm="Delete &quot;{{ collection.title }}&quot;? Its items stay published — only the collection itself is removed."
+                            >
+                                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7h14"></path><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path><path d="M7 7l1 13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1l1-13"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+                            </button>
+                        </form>
+                    </div>
+                </li>
+                {% empty %}
+                <p>No collections yet.</p>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</section>
+
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'js/collection-picker.js' %}"></script>
+{% endblock %}

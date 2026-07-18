@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}{{ collection.title }} | Collections | DL Fantasy{% endblock %}
+{% block content %}
+
+<div class="archive-container archive-index">
+
+    <header class="archive-header">
+        <h1>{{ collection.title }}</h1>
+        {% if collection.description %}
+        <p>{{ collection.description }}</p>
+        {% endif %}
+    </header>
+
+    <nav class="archive-list">
+        {% for item in items %}
+        <a href="{{ item.content.get_absolute_url }}" class="archive-list-item">
+            <span class="item-number">{{ forloop.counter|stringformat:"02d" }}</span>
+            <div class="item-meta">
+                <h2>{{ item.content }}</h2>
+                <p>{% if item.content.excerpt %}{{ item.content.excerpt }}{% else %}{{ item.content.get_category_display }} · {{ item.content.created_at|date:"F j, Y" }}{% endif %}</p>
+            </div>
+            <span class="item-arrow">&rarr;</span>
+        </a>
+        {% empty %}
+        <p>Nothing collected here yet — check back soon.</p>
+        {% endfor %}
+    </nav>
+</div>
+
+{% endblock %}

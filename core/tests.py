@@ -1,7 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
 
-from upload.models import Content
+from upload.models import Collection, CollectionItem, Content
 
 PAGE_SIZE = 12
 
@@ -145,13 +145,48 @@ class StaticPageViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, 'about.html')
 
-    def test_concepts_ok(self):
+    def test_concepts_redirects_anonymous_to_login(self):
         response = self.client.get(reverse('concepts'))
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.status_code, 302)
 
-    def test_collections_ok(self):
+class CollectionViewTests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.first = Content.objects.create(category='philosophy', title='First Essay', slug='first-essay', body='b')
+        cls.second = Content.objects.create(category='godvalley', title='Opening', slug='opening', chapter_number=1, body='b')
+        cls.draft = Content.objects.create(category='fiction', title='Draft Story', slug='draft-story', body='b', is_published=False)
+        cls.anthology = Collection.objects.create(title='Best Of', slug='best-of')
+        # Positions deliberately reversed from creation order to prove ordering comes from
+        # `position`, not insertion order or pk.
+        CollectionItem.objects.create(collection=cls.anthology, content=cls.first, position=2)
+        CollectionItem.objects.create(collection=cls.anthology, content=cls.second, position=1)
+        CollectionItem.objects.create(collection=cls.anthology, content=cls.draft, position=3)
+        cls.unpublished = Collection.objects.create(title='Hidden', slug='hidden', is_published=False)
+
+    def test_collections_list_ok(self):
         response = self.client.get(reverse('collections'))
         self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'collections.html')
+
+    def test_collections_list_excludes_unpublished(self):
+        response = self.client.get(reverse('collections'))
+        slugs = [collection.slug for collection in response.context['collections']]
+        self.assertIn('best-of', slugs)
+        self.assertNotIn('hidden', slugs)
+
+    def test_collection_detail_ok_anonymous(self):
+        response = self.client.get(reverse('collection_detail', args=['best-of']))
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'collection_detail.html')
+
+    def test_collection_detail_404_for_unpublished(self):
+        response = self.client.get(reverse('collection_detail', args=['hidden']))
+        self.assertEqual(response.status_code, 404)
+
+    def test_collection_detail_items_ordered_by_position_and_exclude_unpublished(self):
+        response = self.client.get(reverse('collection_detail', args=['best-of']))
+        slugs = [item.content.slug for item in response.context['items']]
+        self.assertEqual(slugs, ['opening', 'first-essay'])
 
 
 class SearchViewTests(TestCase):
@@ -218,4 +253,4 @@ class SitemapTests(TestCase):
         self.assertIn('/writings/fiction/fiction-item/', content)
         self.assertNotIn('draft-item', content)
         self.assertNotIn('/concepts/', content)
-        self.assertNotIn('/collections/', content)
+        self.assertIn('/collections/', content)

@@ -1,6 +1,9 @@
 from django.contrib import admin
 
-from .models import Content, DownloadHistory, Favourite, News, ReadingHistory, ReadingListItem, Subcategory
+from .models import (
+    Collection, CollectionItem, Content, DownloadHistory, Favourite, News, ReadingHistory,
+    ReadingListItem, Subcategory,
+)
 
 
 @admin.register(Content)
@@ -18,6 +21,22 @@ class SubcategoryAdmin(admin.ModelAdmin):
     list_filter = ('parent_category',)
     prepopulated_fields = {'slug': ('name',)}
     ordering = ('parent_category', 'name')
+
+
+class CollectionItemInline(admin.TabularInline):
+    model = CollectionItem
+    fields = ('content', 'position')
+    extra = 0
+
+
+@admin.register(Collection)
+class CollectionAdmin(admin.ModelAdmin):
+    list_display = ('title', 'is_published', 'created_at')
+    list_filter = ('is_published',)
+    search_fields = ('title', 'description')
+    prepopulated_fields = {'slug': ('title',)}
+    ordering = ('-created_at',)
+    inlines = [CollectionItemInline]
 
 
 @admin.register(News)

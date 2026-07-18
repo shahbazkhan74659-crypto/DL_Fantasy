@@ -75,8 +75,9 @@ Three apps, one Django project (`dlfantasy/`):
 
 A dedicated in-site content-creation surface — not Django admin — living entirely in the `upload`
 app (`upload/views.py`, `upload/urls.py`, `upload/forms.py`, included from `dlfantasy/urls.py` at
-`/upload/`). `/upload/` is a hub with four cards (God Valley / Fiction / Philosophy / Mythology,
-`upload.views.CARDS`), each opening a dedicated big form:
+`/upload/`). `/upload/` is a hub with four content cards (God Valley / Fiction / Philosophy /
+Mythology, `upload.views.CARDS`) plus a fifth Collections card (`upload.views.COLLECTIONS_CARD` —
+see **Collections** below), each content card opening a dedicated big form:
 `upload_godvalley`/`upload_fiction`/`upload_philosophy`/`upload_mythology`. Every view is gated
 `@login_required` + `if not request.user.is_staff: raise Http404` (same pattern as
 `core.views.create_news`/`users_list` — anonymous visitors get redirected to login by
@@ -275,7 +276,7 @@ Unlike Writings, God Valley has dedicated views because it needed an intro/story
 list+detail:
 
 - `godvalley_list` (`/godvalley/`) — static hero + lore/story blurb, no DB query. This is the page
-  linked from the navbar and from the Archive index.
+  linked from the Archive index (it was the third navbar link until that slot went to Collections).
 - `godvalley_chapters` (`/godvalley/chapters/`) — the actual chapter grid. Its `?q=` title-search
   input (`Content.objects.filter(title__icontains=...)`) was later removed from the page — the view
   still applies `?q=` if reached directly by URL, but nothing in the UI links to it anymore; see
@@ -348,20 +349,59 @@ still fall back to the original whole-`page-content` fade/swap.
 
 The navbar's fourth link is **Archive** (`/archive/`), not About. Archive is a directory-index page
 (styled with `.archive-list-item` rows) linking out to: God Valley (`godvalley_list`), Concepts,
-Collections, and About. `concepts` and `collections` are currently heading-only placeholder pages
-with no model behind them. `about` holds the actual "who I am / what this site is" bio content,
-and refers to the author in-character as **Mr. Dex** (site name "DL" = "Dex Library").
+Collections, and About. `concepts` is currently a heading-only placeholder page with no model
+behind it (and is staff-gated). **Collections is no longer a placeholder** — it's a real,
+public feature: author-curated anthologies (see **Collections** below). `about` holds the actual
+"who I am / what this site is" bio content, and refers to the author in-character as **Mr. Dex**
+(site name "DL" = "Dex Library").
+
+### Collections: author-curated anthologies
+
+`upload.models.Collection` — a named, ordered grouping of any mix of `Content` rows across
+categories (e.g. "Best of Philosophy", "God Valley: Arc One"). Globally-unique slug generated in
+`save()` (same dedupe-loop as `News.save()` — the Upload form doesn't expose a slug field),
+`description`/`cover_image`/`is_published` + an ordered M2M to `Content` through
+`upload.models.CollectionItem` (`position` PositiveIntegerField, unique `(collection, content)`,
+ordered `['position']`). `CollectionItem.content` is `CASCADE` (matching Favourite/ReadingListItem,
+*not* Subcategory's PROTECT) so deleting content silently drops its memberships and the existing
+`delete_content` flow keeps working. Positions are only compared relatively and never renumbered
+after removals — the visitor detail page numbers rows via `forloop.counter`, so gaps are invisible.
+
+**Visitor side** (public, no gate — unlike `concepts`): `/collections/`
+(`core.views.collections`) is a paginated `_archive_card.html` grid of published collections
+(item counts annotated with a `Q(items__content__is_published=True)` filter; the "N items"
+`meta_label` is picked in Python, same irregular-plural reasoning as the hub cards);
+`/collections/<slug>/` (`core.views.collection_detail`) reuses `archive.html`'s
+`.archive-list-item` numbered-row component for the ordered item list, each row linking to the
+item's existing public page. Unpublished collections 404; items unpublished *after* being
+collected are filtered out of the detail view. An empty published collection is deliberately
+still listed ("0 items") — hiding it would make the author think publishing failed.
+
+**Admin side**: a fifth card on `/upload/` (`upload.views.COLLECTIONS_CARD`, eyebrow "Curation",
+stacked-layers icon) → `/upload/collections/` (`upload.views.upload_collections`,
+`templates/upload_collection_form.html`) with edit/delete/move views following the exact
+`edit_content`/`delete_content` gate patterns, under `collections/`-prefixed URLs in
+`upload/urls.py`. `CollectionForm` (`upload/forms.py`) deliberately exposes `is_published` —
+unlike `_handle_upload`, which sets it server-side — because an anthology is assembled across
+sessions, so draft-then-publish is a real workflow. The item picker is hand-rendered checkboxes
+grouped by category (validated through a `ModelMultipleChoiceField` limited to published content;
+`upload_form.html`'s generic field loop can't render a grouped picker, hence the two bespoke
+templates). Reordering on the edit page (`templates/upload_collection_edit.html`) is per-row
+up/down buttons using the `formaction` submit-button trick (same as the cover-delete button) —
+HTML can't nest forms — POSTing `direction=up|down` to `move_collection_item`, which swaps
+neighbor positions in a transaction. Also registered in Django admin with a `CollectionItemInline`.
 
 ### Syndication / SEO: `core/feeds.py` and `core/sitemaps.py`
 
 `LatestContentFeed` (`core/feeds.py`, `django.contrib.syndication`) serves the last 20 published
 `Content` rows, newest first, at `/feed/`; `base.html` links it via
 `<link rel="alternate" type="application/rss+xml">` for reader auto-discovery. `core/sitemaps.py`
-registers two `Sitemap` classes at `/sitemap.xml` (wired in `dlfantasy/urls.py`, requires
-`'django.contrib.sitemaps'` in `INSTALLED_APPS`): `ContentSitemap` (all published `Content`) and
-`StaticViewSitemap` (the static pages only — home/writings/godvalley_list/godvalley_chapters/
-archive/about). `concepts`/`collections` are deliberately excluded from both, since they're
-placeholder pages with no real content yet.
+registers three `Sitemap` classes at `/sitemap.xml` (wired in `dlfantasy/urls.py`, requires
+`'django.contrib.sitemaps'` in `INSTALLED_APPS`): `ContentSitemap` (all published `Content`),
+`CollectionSitemap` (all published `Collection` rows — added when Collections became a real
+feature), and `StaticViewSitemap` (the static pages — home/writings/godvalley_list/
+godvalley_chapters/archive/about/news/collections). `concepts` remains deliberately excluded from
+both, since it's still a placeholder page with no real content.
 
 ### Navbar layout is a 3-column CSS grid, not flex
 
@@ -676,8 +716,9 @@ deliberately introduced. Trust the code over the doc on these points:
 
 - **Nav/pages**: scope says `Home / Writings / God Valley / About` and explicitly says to drop
   Archive/Concepts from the old project's nav. Current nav is
-  `Home / Writings / God Valley / Archive`, and Archive/Concepts/Collections all exist (Concepts
-  and Collections are placeholders pending real content).
+  `Home / Writings / Collections / Archive` — the God Valley nav link was replaced with
+  Collections once that became a real feature; God Valley stays reachable via Archive (and the
+  homepage). Concepts is still a placeholder; Collections is not (see **Collections**).
 - **Writings sub-categories**: scope says Fiction / Essays / Poetry. Current `Content.Category` is
   Fiction / Philosophy / Mythology.
 - **Search**: scope says no search feature at launch. Site-wide search is now live, posting to

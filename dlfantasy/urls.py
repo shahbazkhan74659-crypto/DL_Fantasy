@@ -20,9 +20,9 @@ from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
 
-from core.sitemaps import ContentSitemap, StaticViewSitemap
+from core.sitemaps import CollectionSitemap, ContentSitemap, StaticViewSitemap
 
-sitemaps = {'content': ContentSitemap, 'static': StaticViewSitemap}
+sitemaps = {'content': ContentSitemap, 'collections': CollectionSitemap, 'static': StaticViewSitemap}
 
 urlpatterns = [
     path('admin/', admin.site.urls),
